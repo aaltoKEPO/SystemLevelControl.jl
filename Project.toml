@@ -1,0 +1,13 @@
+name = "SystemLevelControl"
+uuid = "11287a3c-721d-43ad-9aed-eb4ab2d93a5d"
+authors = ["Otacilio 'Minho' Neto <otacilio.neto.aalto.fi>"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.8"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
