@@ -6,11 +6,11 @@ DocMeta.setdocmeta!(SystemLevelControl, :DocTestSetup, :(using SystemLevelContro
 makedocs(;
     modules=[SystemLevelControl],
     authors="Otacilio 'Minho' Neto <otacilio.neto.aalto.fi>",
-    repo="https://github.com/tiominho/SystemLevelControl.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/aaltoKEPO/SystemLevelControl.jl/blob/{commit}{path}#{line}",
     sitename="SystemLevelControl.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://tiominho.github.io/SystemLevelControl.jl",
+        canonical="https://aaltoKEPO.github.io/SystemLevelControl.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -20,6 +20,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/tiominho/SystemLevelControl.jl",
+    repo="github.com/aaltoKEPO/SystemLevelControl.jl",
     devbranch="main",
 )
