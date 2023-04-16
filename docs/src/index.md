@@ -4,7 +4,7 @@ CurrentModule = SystemLevelControl
 
 # SystemLevelControl
 
-Documentation for [SystemLevelControl](https://github.com/tiominho/SystemLevelControl.jl).
+Documentation for [SystemLevelControl](https://github.com/aaltoKEPO/SystemLevelControl.jl).
 
 ```@index
 ```

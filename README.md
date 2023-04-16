@@ -2,8 +2,8 @@
 <p align="center">
 <a href="https://aaltoKEPO.github.io/SystemLevelControl.jl/stable/"><img alt="Stable" src="https://img.shields.io/badge/docs-stable-blue.svg"></a>
 <a href="https://aaltoKEPO.github.io/SystemLevelControl.jl/dev/"><img alt="Dev" src="https://img.shields.io/badge/docs-dev-blue.svg"></a>
-<a href="https://github.com/tiominho/SystemLevelControl.jl/actions/workflows/CI.yml?query=branch%3Amain"><img alt="Build Status" src="https://github.com/aaltoKEPO/SystemLevelControl.jl/actions/workflows/CI.yml/badge.svg?branch=main"></a>
-<a href="https://codecov.io/gh/tiominho/SystemLevelControl.jl"><img alt="Coverage" src="https://codecov.io/gh/aaltoKEPO/SystemLevelControl.jl/branch/main/graph/badge.svg"></a></p>
+<a href="https://github.com/aaltoKEPO/SystemLevelControl.jl/actions/workflows/CI.yml?query=branch%3Amain"><img alt="Build Status" src="https://github.com/aaltoKEPO/SystemLevelControl.jl/actions/workflows/CI.yml/badge.svg?branch=main"></a>
+<a href="https://codecov.io/gh/aaltoKEPO/SystemLevelControl.jl"><img alt="Coverage" src="https://codecov.io/gh/aaltoKEPO/SystemLevelControl.jl/branch/main/graph/badge.svg"></a></p>
 </p>
 
 ---
