@@ -23,7 +23,7 @@ In order to use `SystemLevelControl.jl`, you can add this repository directly:
 using Pkg; Pkg.add("https://github.com/aaltoKEPO/SystemLevelControl.jl")
 ```
 
-or entering `]add https://github.com/aaltoKEPO/SystemLevelControl.jl` in Julia REPL. 
+or entering `]add https://github.com/aaltoKEPO/SystemLevelControl.jl` in the Julia REPL. 
 
 ## Usage
 
