@@ -3,7 +3,7 @@
 # This code is part of the 'SystemLevelControl.jl' package, licensed
 # the MIT License (see <https://spdx.org/licenses/MIT.html> )                
 # -----------------------------------------------------------------------
-abstract type AbstractGeneralizedPlant{T<:Real} end
+abstract type AbstractGeneralizedPlant{T<:Number} end
 # --
 
 # PLANT DATA TYPE DECLARATIONS _______________________________________________
@@ -22,27 +22,23 @@ struct GeneralizedPlant{T} <: AbstractGeneralizedPlant{T}
     function GeneralizedPlant{T}(A::SparseMatrixCSC{T,Int64},B₁::SparseMatrixCSC{T,Int64},B₂::SparseMatrixCSC{T,Int64},
                                  C₁::SparseMatrixCSC{T,Int64},D₁₁::SparseMatrixCSC{T,Int64},D₁₂::SparseMatrixCSC{T,Int64},
                                  C₂::SparseMatrixCSC{T,Int64},D₂₁::SparseMatrixCSC{T,Int64},D₂₂::SparseMatrixCSC{T,Int64}) where {T}
+        
         validate_GeneralizedPlant(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
         new{T}(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂, size(A,1), size(C₁,1), size(C₂,1), size(B₁,2), size(B₂,2))
     end
 
-    function GeneralizedPlant{T}(A::AbstractMatrix{T},B₁::AbstractMatrix{T},B₂::AbstractMatrix{T},
-                              C₁::AbstractMatrix{T},D₁₁::AbstractMatrix{T},D₁₂::AbstractMatrix{T},
-                              C₂::AbstractMatrix{T},D₂₁::AbstractMatrix{T},D₂₂::AbstractMatrix{T}) where {T}
-        validate_GeneralizedPlant(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
-        new{T}(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂, size(A,1), size(C₁,1), size(C₂,1), size(B₁,2), size(B₂,2))
-    end
-
-    function GeneralizedPlant(A::AbstractMatrix,B₁::AbstractMatrix,B₂::AbstractMatrix,
-                              C₁::AbstractMatrix,D₁₁::AbstractMatrix,D₁₂::AbstractMatrix,
-                              C₂::AbstractMatrix,D₂₁::AbstractMatrix,D₂₂::AbstractMatrix)
+    function GeneralizedPlant(A::AbstractArray,B₁::AbstractArray,B₂::AbstractArray,
+                              C₁::AbstractArray,D₁₁::AbstractArray,D₁₂::AbstractArray,
+                              C₂::AbstractArray,D₂₁::AbstractArray,D₂₂::AbstractArray)
+        
+        
         validate_GeneralizedPlant(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
         new{Float64}(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂, size(A,1), size(C₁,1), size(C₂,1), size(B₁,2), size(B₂,2))
     end
 end
 
 # Custom constructors
-function GeneralizedPlant(Σ::Union{SparseMatrixCSC{T,Int64}, AbstractMatrix{T}}, DIMS::Vector{Int64}) where {T}
+function GeneralizedPlant(Σ::AbstractArray{T}, DIMS::AbstractArray{Int64}) where {T<:Number}
     if length(DIMS) == 4
         StateFeedbackPlant(Σ, DIMS)
     elseif length(DIMS) == 5
@@ -51,14 +47,17 @@ function GeneralizedPlant(Σ::Union{SparseMatrixCSC{T,Int64}, AbstractMatrix{T}}
             error("Dimensions do not match! Expected: ($(nx+nz+ny),$(nx+nu+nw)), got $(size(Σ))")
         end
 
-        A  = sparse(Σ[1:nx,           1:nx]);   B₁ = sparse(Σ[1:nx,           nx.+(1:nw)]);   B₂ = sparse(Σ[1:nx,            (nx+nw).+(1:nu)]);
-        C₁ = sparse(Σ[nx.+(1:nz),     1:nx]);  D₁₁ = sparse(Σ[nx.+(1:nz),     nx.+(1:nw)]);  D₁₂ = sparse(Σ[nx.+(1:nz),      (nx+nw).+(1:nu)]);
-        C₂ = sparse(Σ[(nx+nz).+(1:ny),1:nx]);  D₂₁ = sparse(Σ[(nx+nz).+(1:ny),nx.+(1:nw)]);  D₂₂ = sparse(Σ[(nx+nz).+(1:ny), (nx+nw).+(1:nu)]);
-        GeneralizedPlant(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
+        Σ = sparse(Σ);
+        A = Σ[1:nx,           1:nx];   B₁ = Σ[1:nx,           nx.+(1:nw)];   B₂ = Σ[1:nx,            (nx+nw).+(1:nu)];
+        C₁ = Σ[nx.+(1:nz),     1:nx];  D₁₁ = Σ[nx.+(1:nz),     nx.+(1:nw)];  D₁₂ = Σ[nx.+(1:nz),      (nx+nw).+(1:nu)];
+        C₂ = Σ[(nx+nz).+(1:ny),1:nx];  D₂₁ = Σ[(nx+nz).+(1:ny),nx.+(1:nw)];  D₂₂ = Σ[(nx+nz).+(1:ny), (nx+nw).+(1:nu)];
+        
+        GeneralizedPlant{T}(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
     end
 end
 
-GeneralizedPlant(A::AbstractMatrix,B₁::AbstractMatrix,B₂::AbstractMatrix,C₁::AbstractMatrix,D₁₁::AbstractMatrix,D₁₂::AbstractMatrix) = StateFeedbackPlant(A, B₁, B₂, C₁, D₁₁, D₁₂)
+GeneralizedPlant(A::AbstractArray,B₁::AbstractArray,B₂::AbstractArray,C₁::AbstractArray,D₁₁::AbstractArray,D₁₂::AbstractArray) = StateFeedbackPlant(A, B₁, B₂, C₁, D₁₁, D₁₂)
+GeneralizedPlant(A::AbstractArray,B₁::AbstractArray,B₂::AbstractArray) = StateFeedbackPlant(A, B₁, B₂)
 
 # User-friendly constructor 
 Plant(args...; kwargs...) = GeneralizedPlant(args...; kwargs...)

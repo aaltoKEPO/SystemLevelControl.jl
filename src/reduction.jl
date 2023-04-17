@@ -8,14 +8,14 @@
 
 # FUNCTIONS _____________________________________________________________
 
-function sparsity_dim_reduction(P::AbstractGeneralizedPlant, cⱼ::AbstractVector, 𝓢::AbstractVector{Ts}) where {Ts<:Union{Vector{SparseMatrixCSC{Bool,Int64}},Vector{AbstractMatrix{Bool}}}}
+function sparsity_dim_reduction(P::AbstractGeneralizedPlant, cⱼ::AbstractVector, 𝓢::AbstractVector)
     # Defines the reduced model
     if isa(P, AbstractStateFeedbackPlant)
-        sₓ,sᵤ = (findnz(𝓢ⱼ[end][:,cⱼ])[1] |> unique  for 𝓢ⱼ in 𝓢);   
+        sₓ,sᵤ = (unique(findnz(𝓢ⱼ[end][:,cⱼ])[1]) for 𝓢ⱼ in 𝓢);   
         P̃ = Plant(P.A[sₓ,sₓ],              P.B₁[sₓ,cⱼ],            P.B₂[sₓ,sᵤ],
                   P.C₁[[sₓ;P.Nx.+sᵤ], sₓ], P.D₁₁[[sₓ;P.Nx.+sᵤ],cⱼ], P.D₁₂[[sₓ;P.Nx.+sᵤ],sᵤ])
     else
-        sₓ,sᵤ,sᵧ = (findnz(𝓢ⱼ[end][:,cⱼ])[1] |> unique  for 𝓢ⱼ in 𝓢);   
+        sₓ,sᵤ,sᵧ = (unique(findnz(𝓢ⱼ[end][:,cⱼ])[1]) for 𝓢ⱼ in 𝓢);   
         P̃ = Plant(P.A[sₓ,sₓ],              P.B₁[sₓ,cⱼ],            P.B₂[sₓ,sᵤ],
                   P.C₁[[sₓ;P.Nx.+sᵤ], sₓ], P.D₁₁[ [sₓ;P.Nx.+sᵤ],cⱼ], P.D₁₂[[sₓ;P.Nx.+sᵤ],sᵤ],
                   P.C₂[sᵧ,sₓ],              P.B₁[sᵧ,cⱼ],            P.B₂[sᵧ,sᵤ])

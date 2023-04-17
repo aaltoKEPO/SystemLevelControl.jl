@@ -7,7 +7,7 @@
 ##  and their specialized subtypes
 
 # PLANT OPERATIONS __________________________________________________________
-function Base.:adjoint(P::AbstractGeneralizedPlant{T}) where {T<:Real}
+function Base.:adjoint(P::AbstractGeneralizedPlant{T}) where {T<:Number}
     if isa(P, GeneralizedPlant)
         GeneralizedPlant{T}(P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', P.D₂₁', P.B₂', P.D₁₂', P.D₂₂')
     elseif isa(P, StateFeedbackPlant)
