@@ -46,12 +46,7 @@ A = I + spdiagm(1 => 0.2ones(Nx-1)) - spdiagm(-1 => 0.2ones(Nx-1));
 B₁ = I(Nx);
 B₂ = spdiagm(0 => ones(Nx))[:,vec((1:2).+6(0:9)')];
 
-C₁ = [I(Nx); spzeros(Nu,Nx)];
-D₁₁ = spzeros(Nx+Nu,Nx);
-D₁₂ = [spzeros(Nx,Nu); I(Nu)];
-
-P = Plant(A,  B₁,  B₂, 
-          C₁, D₁₁, D₁₂);
+P = Plant(A, B₁, B₂);
 
 # Definition of (d,T)-localization constraints
 d,T,α = (9, 29, 1.5);
@@ -59,16 +54,20 @@ d,T,α = (9, 29, 1.5);
 𝓢ᵤ = [(B₂' .≠ 0)*(A .≠ 0)^min(d+1,floor(α*(t-1))) .≠ 0 for t = 1:T];
 
 # Solves the 𝓗₂ state-feedback problem
-Φₓ,Φᵤ = SLS_𝓗₂(P, T, [𝓢ₓ,𝓢ᵤ]);
+Φₓ,Φᵤ = SLS_𝓗₂(P, [𝓢ₓ,𝓢ᵤ]);
 ```
 
 Finally, the closed-loop response, with a unit impulse disturbance $w(t) = \delta(t{-}50)e_{30}$, can then be simulated as:
 ```julia
-for t = 1:100-1
-    β[:,t+1] = sum([Φₓ[τ+1]*(x[:,t+1-τ] - β[:,t+1-τ]) for τ = 1:min(t,TT-1)]);
-    u[:,t]   = sum([Φᵤ[ τ ]*(x[:,t+1-τ] - β[:,t+1-τ]) for τ = 1:min(t,TT)  ]);
+w(t) = (t==50)*I(59)[:,30]
+x = spzeros(Nx,250); 
+β = similar(x); u = spzeros(Nu,250)
+
+for t = 1:250-1
+    β[:,t+1] = sum([Φₓ[τ+1]*(x[:,t+1-τ] - β[:,t+1-τ]) for τ = 1:min(t,T-1)]);
+    u[:,t]   = sum([Φᵤ[ τ ]*(x[:,t+1-τ] - β[:,t+1-τ]) for τ = 1:min(t,T)  ]);
     
-    x[:,t+1] = A*x[:,t]  + B₁*w(t) + B₂*u[:,t];
+    x[:,t+1] = A*x[:,t] + B₁*w(t) + B₂*u[:,t];
 end
 ```
 
