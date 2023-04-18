@@ -10,7 +10,7 @@
 
 **SystemLevelControl** is a [Julia](https://julialang.org/) toolbox for synthesizing controllers using the [System Level Synthesis](https://arxiv.org/abs/1904.01634) (SLS) methodology. We aim at providing a straightforward, [`@Distributed`](https://docs.julialang.org/en/v1/manual/distributed-computing/)-enabled, interface for optimal and robust control of large-scale cyberphysical systems.
 
-## Instalation
+## Installation
 
 This package is currently not in the official registry.
 

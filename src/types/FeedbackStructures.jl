@@ -3,9 +3,8 @@
 # This code is part of the 'SystemLevelControl.jl' package, licensed
 # the MIT License (see <https://spdx.org/licenses/MIT.html> )                
 # -----------------------------------------------------------------------
-using SystemLevelControl
-using Test, SafeTestsets
+abstract type AbstractFeedbackStructure end
 
-@time begin 
-    @time @safetestset "(Types) GeneralizedPlant composite type" begin include("types_GeneralizedPlant_test.jl") end
-end
+struct OutputFeedback <: AbstractFeedbackStructure end
+struct StateFeedback <: AbstractFeedbackStructure end
+# --

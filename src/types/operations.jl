@@ -7,6 +7,8 @@
 ##  and their specialized subtypes
 
 # PLANT OPERATIONS __________________________________________________________
+Base.:(==)(P1::GeneralizedPlant, P2::GeneralizedPlant) = all(getfield(P1,f)==getfield(P2,f) for f in fieldnames(GeneralizedPlant))
+
 function Base.:adjoint(P::AbstractGeneralizedPlant{T}) where {T<:Number}
     if isa(P, GeneralizedPlant)
         GeneralizedPlant{T}(P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', P.D₂₁', P.B₂', P.D₁₂', P.D₂₂')

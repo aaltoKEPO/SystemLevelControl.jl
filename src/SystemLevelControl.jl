@@ -6,7 +6,8 @@
 module SystemLevelControl
 # --
 
-export AbstractGeneralizedPlant, StateFeedbackPlant, GeneralizedPlant, Plant
+export AbstractFeedbackStructure, StateFeedback, OutputFeedback
+export AbstractGeneralizedPlant, GeneralizedPlant, Plant
 export SLS_𝓗₂
 export sparsity_dim_reduction
 export generateTree
@@ -17,8 +18,9 @@ using LinearAlgebra, Statistics, Distributions
 using JuMP, Ipopt
 using SparseArrays
 
+include("types/FeedbackStructures.jl") 
 include("types/GeneralizedPlant.jl") 
-include("types/StateFeedbackPlant.jl") 
+include("types/conversions.jl") 
 
 include("types/operations.jl") 
 include("synthesis.jl")
