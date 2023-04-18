@@ -19,7 +19,7 @@ P_scalar = @inferred GeneralizedPlant{Float64,OutputFeedback}(a, b₁, b₂, c�
 @test P_scalar == Plant(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0)
 @test P_scalar == Plant(1, 2, 3, 4, 5, 6, 7, 8, 9)
 
-@test typeof(Plant(1, 2, 3, 4, 5, 6, 7, 8, 9)) <: GeneralizedPlant{Int64,OutputFeedback}
+@test typeof(Plant(1, 2, 3, 4, 5, 6, 7, 8, 9)) <: GeneralizedPlant{Int,OutputFeedback}
 @test typeof(Plant(1, 2, 3, 4, 5.0, 6, 7, 8, 9)) <: GeneralizedPlant{Float64,OutputFeedback}
 @test typeof(Plant(1, [2], 3, 4, 5.0, 6, 7, 8, 9)) <: GeneralizedPlant{Float64,OutputFeedback}
 
@@ -87,9 +87,9 @@ P_large_D0 = Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, 0D₂�
 @test P_large_D0 == Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, 0)
 
 ## State Feedback plants ________________________________________________
-C₂ = SparseMatrixCSC{Float64,Int64}(I, Nx, Nx)
-D₂₁ = SparseMatrixCSC{Float64,Int64}(I, 0, Nw)
-D₂₂ = SparseMatrixCSC{Float64,Int64}(I, 0, Nu)
+C₂ = SparseMatrixCSC{Float64,Int}(I, Nx, Nx)
+D₂₁ = SparseMatrixCSC{Float64,Int}(I, 0, Nw)
+D₂₂ = SparseMatrixCSC{Float64,Int}(I, 0, Nu)
 
 P_SF = @inferred GeneralizedPlant{Float64,StateFeedback}(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
 

@@ -13,21 +13,21 @@ const EyeOrNumberOrAbstractArray = Union{UniformScaling, NumberOrAbstractArray}
 # PLANT DATA TYPE DECLARATIONS _______________________________________________
 struct GeneralizedPlant{T,Ts} <: AbstractGeneralizedPlant{T,Ts}
     # Fields
-    A::SparseMatrixCSC{T,Int64}
-    B₁::SparseMatrixCSC{T,Int64}
-    B₂::SparseMatrixCSC{T,Int64}
-    C₁::SparseMatrixCSC{T,Int64}
-    D₁₁::SparseMatrixCSC{T,Int64}
-    D₁₂::SparseMatrixCSC{T,Int64}
-    C₂::SparseMatrixCSC{T,Int64}
-    D₂₁::SparseMatrixCSC{T,Int64}
-    D₂₂::SparseMatrixCSC{T,Int64}
+    A::SparseMatrixCSC{T,Int}
+    B₁::SparseMatrixCSC{T,Int}
+    B₂::SparseMatrixCSC{T,Int}
+    C₁::SparseMatrixCSC{T,Int}
+    D₁₁::SparseMatrixCSC{T,Int}
+    D₁₂::SparseMatrixCSC{T,Int}
+    C₂::SparseMatrixCSC{T,Int}
+    D₂₁::SparseMatrixCSC{T,Int}
+    D₂₂::SparseMatrixCSC{T,Int}
     Nx::Integer; Nz::Integer; Ny::Integer; Nw::Integer; Nu::Integer;
 
     # Explicit constructor
-    function GeneralizedPlant{T,Ts}(A::SparseMatrixCSC{T,Int64},B₁::SparseMatrixCSC{T,Int64},B₂::SparseMatrixCSC{T,Int64},
-                                 C₁::SparseMatrixCSC{T,Int64},D₁₁::SparseMatrixCSC{T,Int64},D₁₂::SparseMatrixCSC{T,Int64},
-                                 C₂::SparseMatrixCSC{T,Int64},D₂₁::SparseMatrixCSC{T,Int64},D₂₂::SparseMatrixCSC{T,Int64}
+    function GeneralizedPlant{T,Ts}(A::SparseMatrixCSC{T,Int},B₁::SparseMatrixCSC{T,Int},B₂::SparseMatrixCSC{T,Int},
+                                 C₁::SparseMatrixCSC{T,Int},D₁₁::SparseMatrixCSC{T,Int},D₁₂::SparseMatrixCSC{T,Int},
+                                 C₂::SparseMatrixCSC{T,Int},D₂₁::SparseMatrixCSC{T,Int},D₂₂::SparseMatrixCSC{T,Int}
     ) where {T<:Number,Ts<:AbstractFeedbackStructure}
         
         validate_GeneralizedPlant(Ts, A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
@@ -54,13 +54,13 @@ function GeneralizedPlant(A::NumberOrAbstractArray,B₁::NumberOrAbstractArray,B
     D₁₂ = to_sparse_matrix(T, D₁₂)
 
     if Ts <: OutputFeedback 
-        C₂ = (C₂ isa UniformScaling) ? SparseMatrixCSC{T,Int64}(C₂, size(A)) : to_sparse_matrix(T, C₂)
+        C₂ = (C₂ isa UniformScaling) ? SparseMatrixCSC{T,Int}(C₂, size(A)) : to_sparse_matrix(T, C₂)
         D₂₁ = to_sparse_matrix(T, D₂₁)
         D₂₂ = fix_feedthrough(to_sparse_matrix(T, D₂₂), size(C₂,1), size(B₂,2))
     else 
-        C₂ = SparseMatrixCSC{T,Int64}(I, size(A))
-        D₂₁ = SparseMatrixCSC{T,Int64}(I, 0, size(B₁,2))
-        D₂₂ = SparseMatrixCSC{T,Int64}(I, 0, size(B₂,2))
+        C₂ = SparseMatrixCSC{T,Int}(I, size(A))
+        D₂₁ = SparseMatrixCSC{T,Int}(I, 0, size(B₁,2))
+        D₂₂ = SparseMatrixCSC{T,Int}(I, 0, size(B₂,2))
     end
 
     # Returns the GeneralizedPlant object
@@ -72,13 +72,13 @@ function GeneralizedPlant(A::NumberOrAbstractArray,B₁::NumberOrAbstractArray,B
 end
 
 function GeneralizedPlant(A::NumberOrAbstractArray,B₁::NumberOrAbstractArray,B₂::NumberOrAbstractArray)
-    CD₁ = SparseMatrixCSC{Bool,Int64}(I, size(A,1)+size(B₂,2), size(A,1)+size(B₂,2))
+    CD₁ = SparseMatrixCSC{Bool,Int}(I, size(A,1)+size(B₂,2), size(A,1)+size(B₂,2))
     C₁  = CD₁[:,1:size(A,1)]
     D₁₂ = CD₁[:,1+size(A,1):end]
     return GeneralizedPlant(A,B₁,B₂,C₁,0,D₁₂,I,Bool[],Bool[])
 end
 
-function GeneralizedPlant(Σ::AbstractArray{T}, DIMS::AbstractArray{Int64}) where {T<:Number}
+function GeneralizedPlant(Σ::AbstractArray{T}, DIMS::AbstractArray{Int}) where {T<:Number}
     if length(DIMS) == 5
         Ts = OutputFeedback 
         nx, nz, ny, nw, nu = DIMS;
@@ -97,7 +97,7 @@ function GeneralizedPlant(Σ::AbstractArray{T}, DIMS::AbstractArray{Int64}) wher
     C₁ = Σ[(nx+1):(nx+nz),      1:nx];  D₁₁ = Σ[(nx+1):(nx+nz),      (nx+1):(nx+nw)];  D₁₂ = Σ[(nx+1):(nx+nz),       (nx+nw+1):(nx+nw+nu)];
     C₂ = Σ[(nx+nz+1):(nx+nz+ny),1:nx];  D₂₁ = Σ[(nx+nz+1):(nx+nz+ny),(nx+1):(nx+nw)];  D₂₂ = Σ[(nx+nz+1):(nx+nz+ny), (nx+nw+1):(nx+nw+nu)];
     
-    C₂ = isempty(C₂) ? SparseMatrixCSC{T,Int64}(I, size(A)) : C₂;
+    C₂ = isempty(C₂) ? SparseMatrixCSC{T,Int}(I, size(A)) : C₂;
 
     GeneralizedPlant{T,Ts}(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
 end
