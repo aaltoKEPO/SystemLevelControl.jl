@@ -8,17 +8,9 @@
 
 # PLANT OPERATIONS __________________________________________________________
 Base.:(==)(P1::GeneralizedPlant, P2::GeneralizedPlant) = all(getfield(P1,f)==getfield(P2,f) for f in fieldnames(GeneralizedPlant))
-
-function Base.:adjoint(P::AbstractGeneralizedPlant{T}) where {T<:Number}
-    if isa(P, GeneralizedPlant)
-        GeneralizedPlant{T}(P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', P.D₂₁', P.B₂', P.D₁₂', P.D₂₂')
-    elseif isa(P, StateFeedbackPlant)
-        GeneralizedPlant{T}(P.A', P.C₁', 1.0*I(size(P.A,1)), P.B₁', P.D₁₁', spzeros(size(P.B₁,2),size(P.A,1)), P.B₂', P.D₁₂', spzeros(size(P.B₂,2),size(P.A,1)))
-    end
-end
-
-Base.:size(P::AbstractGeneralizedPlant) = isa(P, AbstractStateFeedbackPlant) ? ([P.Nx, P.Nz], [P.Nw, P.Nu]) : ([P.Nx, P.Nz, P.Ny], [P.Nw, P.Nu]);
-Base.:ndims(P::AbstractGeneralizedPlant) = isa(P, AbstractStateFeedbackPlant) ? (2, 3) : (3, 3);
+Base.:size(P::AbstractGeneralizedPlant) = (P.Nx+P.Nz+P.Ny, P.Nu+P.Nw);
+Base.:size(P::AbstractGeneralizedPlant, i::Int) = (P.Nx+P.Nz+P.Ny, P.Nu+P.Nw)[i];
+Base.:ndims(P::AbstractGeneralizedPlant) = 2;
 
 # Overloads the iterate() interface to unpack the system matrices
 Base.:iterate(P::AbstractGeneralizedPlant) = return (P.A, Val(:B₁));
@@ -31,5 +23,9 @@ Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:C₂}) = return (P.C₂, Val(:
 Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:D₂₁}) = return (P.D₂₁, Val(:D₂₂));
 Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:D₂₂}) = return (P.D₂₂, Val(:done));
 Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:done}) = return nothing;
+
+# System/Block algebra
+Base.:adjoint(P::AbstractGeneralizedPlant{T,OutputFeedback}) where {T} = Plant(P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', P.D₂₁', P.B₂', P.D₁₂', P.D₂₂')
+Base.:adjoint(P::AbstractGeneralizedPlant{T,StateFeedback}) where {T} = Plant(P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', spzeros(size(P.B₁))', P.B₂', P.D₁₂', spzeros(size(P.B₂))')
 
 # ___________________________________________________________________________
