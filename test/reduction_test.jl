@@ -4,6 +4,7 @@
 # the MIT License (see <https://spdx.org/licenses/MIT.html> )                
 # -----------------------------------------------------------------------
 using SystemLevelControl, Test 
+using LinearAlgebra, SparseArrays
 # --
 
 # Test sparsity-based dimensionality reduction

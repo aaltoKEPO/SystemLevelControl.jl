@@ -8,4 +8,6 @@ using Test, SafeTestsets
 
 @time begin 
     @time @safetestset "(Types) GeneralizedPlant composite type" begin include("types_GeneralizedPlant_test.jl") end
+    #
+    @time @safetestset "dimensionality reduction methods" begin include("reduction_test.jl") end
 end
