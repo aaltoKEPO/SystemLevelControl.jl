@@ -120,7 +120,14 @@ P_SF_LQR = @inferred GeneralizedPlant{Float64,StateFeedback}(A, B₁, B₂, C₁
 @test P_SF_LQR == Plant(A, B₁, B₂, C₁, 0, D₁₂);
 
 ## Error handling and warnings __________________________________________
-@test_throws ErrorException Plant([1 2], 3, 4)  # A is not square
-@test_throws ErrorException Plant([1 2; 3 4], 5, [6; 7])  # Dimension mismatch w/ B₁ 
-@test_throws ErrorException Plant(A, B₁, B₂, Q, D₁₁, R)  # Dimension mismatch w/ C₁ and D₁₂ 
+@test_throws ErrorException Plant([1 2], B₁, B₂)  # A is not square
+@test_throws ErrorException Plant(A, [1], B₂)  # Dimension mismatch w/ B₁ 
+@test_throws ErrorException Plant(A, B₁, [1])  # Dimension mismatch w/ B₂ 
+@test_throws ErrorException Plant(A, B₁, B₂, Q, 0, D₁₂)  # Dimension mismatch w/ C₁
+@test_throws ErrorException Plant(A, B₁, B₂, C₁, [1], D₁₂)  # Dimension mismatch w/ D₁₁
+@test_throws ErrorException Plant(A, B₁, B₂, C₁, 0, R)  # Dimension mismatch w/ D₁₂
+@test_throws ErrorException Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, [1], D₂₁, 0)  # Dimension mismatch w/ C₂ 
+@test_throws ErrorException Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, I, [1], 0)  # Dimension mismatch w/ D₂₁ 
+
+
 

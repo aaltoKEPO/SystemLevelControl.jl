@@ -45,7 +45,7 @@ function GeneralizedPlant(A::NumberOrAbstractArray,B₁::NumberOrAbstractArray,B
     Ts = (C₂ == I && (isempty(D₂₁) || D₂₁==0)) ? StateFeedback : OutputFeedback;
 
     # Converts all numbers and vectors to sparse matrices 
-    A = to_sparse_matrix(T,A)
+    A = to_sparse_matrix(T, A)
     B₁ = to_sparse_matrix(T, B₁)
     B₂ = to_sparse_matrix(T, B₂)
 
@@ -107,6 +107,8 @@ Plant(args...; kwargs...) = GeneralizedPlant(args...; kwargs...)
 
 
 # VALIDATIONS AND AUXILIARY FUNCTIONS __________________________________________
+Base.show(io::IO, P::AbstractGeneralizedPlant) = print(io, "$(size(P,1))×$(size(P,2)) $(typeof(P)) w/ $(P.Nx) states, $(P.Ny) outputs, $(P.Nu) controls.")
+
 function validate_GeneralizedPlant(Ts, A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
     C₂,D₂₁,D₂₂ = (Ts <: StateFeedback) ? (A,B₁,B₂) : (C₂,D₂₁,D₂₂);
 
@@ -128,20 +130,5 @@ function validate_GeneralizedPlant(Ts, A, B₁, B₂, C₁, D₁₁, D₁₂, C�
         error("The number of columns of B₂ (=$(size(B₂,2))) does not match either D₁₂ (=$(size(D₁₂,2))) or D₂₂ (=$(size(D₂₂,2))).")
     end
 end
-
-function Base.show(io::IO, P::AbstractGeneralizedPlant)
-    # io_Buffer = IOBuffer();
-    # fNames = [:A :B₁ :B₂; :C₁ :D₁₁ :D₁₂; :C₂ :D₂₁ :D₂₂];
-    # for i = 1:3, j = 1:3
-    # end
-    if isa(P, AbstractGeneralizedPlant{T,StateFeedback} where T)
-        Σ = [P.A P.B₁ P.B₂; P.C₁ P.D₁₁ P.D₁₂];
-        print(io, "$(size(Σ,1))×$(size(Σ,2)) $(typeof(P)) w/ $(size(P.A,1)) states and $(size(P.B₂,2)) controls.")
-    else
-        Σ = [P.A P.B₁ P.B₂; P.C₁ P.D₁₁ P.D₁₂; P.C₂ P.D₂₁ P.D₂₂];
-        print(io, "$(size(Σ,1))×$(size(Σ,2)) $(typeof(P)) w/ $(size(P.A,1)) states, $(size(P.B₂,2)) controls, $(size(P.C₂,1)) outputs.")
-    end
-end
-
 
 # ______________________________________________________________________________

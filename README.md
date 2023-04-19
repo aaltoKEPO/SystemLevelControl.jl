@@ -75,7 +75,7 @@ end
 <img alt="SLS H2 Example" src="res/SLS_H2_Chain.png">
 </p>
 
-The above script also automatically solves the SLS problem using distributed computation if Julia was started with the desired number of workers (e.g., with `julia -p 8`, or by using the `addprocs` command). This can dramatically speed up computation and effectively distribute the synthesis problem across multiple CPUs (however, with an increase in memory usage if distributed locally). 
+The above script solves the SLS problem using distributed computation if Julia is started with a desired number of workers (e.g., with `julia -p 8`, or by using the command `addprocs` in the REPL). This can dramatically speed up computation and effectively distribute the synthesis problem across multiple CPUs (however, with an increase in memory usage if distributed locally). 
 
 ## Notes
 
