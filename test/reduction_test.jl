@@ -18,7 +18,7 @@ P_full = Plant(A, B₁, B₂)
 Sₓ = [           (A .≠ 0)^9 .≠ 0];
 Sᵤ = [(B₂' .≠ 0)*(A .≠ 0)^9 .≠ 0];
 
-cⱼ,Ĩ,iiₓ,sₓ,sᵤ = (1:20, I(29)[:,1:20], [ones(Int,20);zeros(Int,9)], 1:29, 1:10);
+cⱼ,Ĩ,iiₓ,sₓ,sᵤ = (1:20, I(30)[:,1:20], [ones(Int,20);zeros(Int,10)], 1:30, 1:10);
 P_redu = Plant(A[sₓ,sₓ], B₁[sₓ,cⱼ], B₂[sₓ,sᵤ])
 
 @test (P_redu,Ĩ,iiₓ,sₓ,sᵤ) == sparsity_dim_reduction(P_full, cⱼ, [Sₓ,Sᵤ])

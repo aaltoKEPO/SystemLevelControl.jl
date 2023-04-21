@@ -10,7 +10,7 @@
 
 function SLS_𝓗₂(P::AbstractGeneralizedPlant, 𝓢::AbstractVector; 𝓘=nothing)
     # -- --
-    if isa(P, StateFeedbackPlant)
+    if P isa GeneralizedPlant{T,StateFeedback} where {T}
         # Auxiliary variables
         𝓘 = (𝓘 === nothing) ? [[i] for i in 1:P.Nx] : 𝓘;
         𝓒 = Iterators.partition( 𝓘, ceil(Int, length(𝓘)/nworkers()) );
@@ -26,6 +26,7 @@ function SLS_𝓗₂(P::AbstractGeneralizedPlant, 𝓢::AbstractVector; 𝓘=not
             end
             return eachcol(Φ)
         end
+
     end
 # --
 end 
@@ -34,10 +35,10 @@ function _SLS_𝓗₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Ab
     # Optimization loop _________________________________________________
     Φ̃ = [[spzeros(P.Nx,P.Nx) for _ in 1:T] [spzeros(P.Nu,P.Nx) for _ in 1:T]];      # SLS Mappings
     for cⱼ in Cⱼ
-        (P̃,Ĩ,iₓₓ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, [𝓢ₓ,𝓢ᵤ]);
+        (P̃,Ĩ,iiₓ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, [𝓢ₓ,𝓢ᵤ]);
         Ã,B̃₁,B̃₂, C̃₁,D̃₁₁,D̃₁₂, C̃₂,D̃₂₁,D̃₂₂  = P̃;
-        B̃₁ = isempty(B̃₁) ? B̃₁ : B̃₁[iₓₓ,:];
-        D̃₂₁ = isempty(D̃₂₁) ? D̃₂₁ : D̃₂₁[iₓₓ,:];
+        B̃₁ = isempty(B̃₁) ? B̃₁ : B̃₁[iiₓ,:];
+        D̃₂₁ = isempty(D̃₂₁) ? D̃₂₁ : D̃₂₁[iiₓ,:];
 
         problem = Model(Ipopt.Optimizer); set_silent(problem)
         Φ̃ₓ = [@variable(problem, [1:P̃.Nx,1:P̃.Nw]) for _ in 1:T];
@@ -56,8 +57,8 @@ function _SLS_𝓗₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Ab
         optimize!(problem)
 
         # TODO: Verify dimensions
-        Φₓ = [sparse(vec(repeat(sₓ,P̃.Nw,1)'), vec(repeat(cⱼ,1,P̃.Nx)'), vec(value.(Φ̃ₓ[t])), P.Nx, P.Nx) for t in 1:T];
-        Φᵤ = [sparse(vec(repeat(sᵤ,P̃.Nw,1)'), vec(repeat(cⱼ,1,P̃.Nu)'), vec(value.(Φ̃ᵤ[t])), P.Nu, P.Nx) for t in 1:T];
+        Φₓ = [sparse(vec(repeat(sₓ,P̃.Nw,1)'), vec(repeat(cⱼ,1,P̃.Nx)'), vec(value.(Φ̃ₓ[t]).*𝓢ₓ[t][sₓ,cⱼ]), P.Nx, P.Nx) for t in 1:T];
+        Φᵤ = [sparse(vec(repeat(sᵤ,P̃.Nw,1)'), vec(repeat(cⱼ,1,P̃.Nu)'), vec(value.(Φ̃ᵤ[t]).*𝓢ᵤ[t][sᵤ,cⱼ]), P.Nu, P.Nx) for t in 1:T];
         Φ̃ += [Φₓ Φᵤ];
     end
     # ___________________________________________________________________
