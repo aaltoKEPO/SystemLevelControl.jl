@@ -7,8 +7,15 @@
 ##  and their specialized subtypes
 
 # PLANT OPERATIONS __________________________________________________________
-Base.:(==)(P1::GeneralizedPlant, P2::GeneralizedPlant) = all(getfield(P1,f)==getfield(P2,f) for f in fieldnames(GeneralizedPlant))
-Base.:size(P::AbstractGeneralizedPlant) = (P.Nx+P.Nz+P.Ny, P.Nu+P.Nw);
+function Base.:(==)(P1::AbstractGeneralizedPlant, P2::AbstractGeneralizedPlant)
+    if P1 isa DualGeneralizedPlant || P2 isa DualGeneralizedPlant   # This avoids elementwise comparison in adjoint arrays
+        return all(norm(getfield(P1,f)-getfield(P2,f)) <= eps() for f in fieldnames(GeneralizedPlant)[1:9])
+    else 
+        return all(getfield(P1,f)==getfield(P2,f) for f in fieldnames(GeneralizedPlant)[1:9])
+    end
+end
+
+Base.:size(P::AbstractGeneralizedPlant) = (P.Nx+P.Nz+P.Ny, P.Nx+P.Nu+P.Nw);
 Base.:size(P::AbstractGeneralizedPlant, i::Int) = (P.Nx+P.Nz+P.Ny, P.Nu+P.Nw)[i];
 Base.:ndims(P::AbstractGeneralizedPlant) = 2;
 
@@ -25,7 +32,7 @@ Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:D₂₂}) = return (P.D₂₂,
 Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:done}) = return nothing;
 
 # System/Block algebra
-Base.:adjoint(P::AbstractGeneralizedPlant{T,OutputFeedback}) where {T} = Plant(P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', P.D₂₁', P.B₂', P.D₁₂', P.D₂₂')
-Base.:adjoint(P::AbstractGeneralizedPlant{T,StateFeedback}) where {T} = Plant(P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', spzeros(size(P.B₁))', P.B₂', P.D₁₂', spzeros(size(P.B₂))')
+Base.:adjoint(P::GeneralizedPlant{T,Ts}) where {T,Ts} = DualGeneralizedPlant{T,Ts}(P)
+Base.:adjoint(P::DualGeneralizedPlant{T,Ts}) where {T,Ts} = P.parent
 
 # ___________________________________________________________________________

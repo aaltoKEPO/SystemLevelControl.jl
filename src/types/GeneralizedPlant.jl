@@ -106,6 +106,31 @@ end
 Plant(args...; kwargs...) = GeneralizedPlant(args...; kwargs...)
 
 
+# SPECIAL AUXILIARY TYPES ______________________________________________________
+struct DualGeneralizedPlant{T,Ts} <: AbstractGeneralizedPlant{T,Ts}
+    # Fields
+    parent::GeneralizedPlant{T,Ts}
+    A::Adjoint{T, SparseMatrixCSC{T,Int}}
+    B₁::Adjoint{T, SparseMatrixCSC{T,Int}}
+    B₂::Adjoint{T, SparseMatrixCSC{T,Int}}
+    C₁::Adjoint{T, SparseMatrixCSC{T,Int}}
+    D₁₁::Adjoint{T, SparseMatrixCSC{T,Int}}
+    D₁₂::Adjoint{T, SparseMatrixCSC{T,Int}}
+    C₂::Adjoint{T, SparseMatrixCSC{T,Int}}
+    D₂₁::Adjoint{T, SparseMatrixCSC{T,Int}}
+    D₂₂::Adjoint{T, SparseMatrixCSC{T,Int}}
+    Nx::Integer; Nz::Integer; Ny::Integer; Nw::Integer; Nu::Integer;
+
+    # Explicit constructors
+    function DualGeneralizedPlant{T,Ts}(P::GeneralizedPlant{T,Ts}) where {T<:Number,Ts<:OutputFeedback}
+        new{T,Ts}(P, P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', P.D₂₁', P.B₂', P.D₁₂', P.D₂₂', P.Nx, P.Nw, P.Nu, P.Nz, P.Ny)
+    end
+
+    function DualGeneralizedPlant{T,Ts}(P::GeneralizedPlant{T,Ts}) where {T<:Number,Ts<:StateFeedback}
+        new{T,Ts}(P, P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', spzeros(size(P.B₁))', P.B₂', P.D₁₂', spzeros(size(P.B₂))', P.Nx, P.Nw, P.Nu, P.Nz, P.Ny)
+    end
+end
+
 # VALIDATIONS AND AUXILIARY FUNCTIONS __________________________________________
 Base.show(io::IO, P::AbstractGeneralizedPlant) = print(io, "$(size(P,1))×$(size(P,2)) $(typeof(P)) w/ $(P.Nx) states, $(P.Ny) outputs, $(P.Nu) controls.")
 
