@@ -16,7 +16,7 @@ function Base.:(==)(P1::AbstractGeneralizedPlant, P2::AbstractGeneralizedPlant)
 end
 
 Base.:size(P::AbstractGeneralizedPlant) = (P.Nx+P.Nz+P.Ny, P.Nx+P.Nu+P.Nw);
-Base.:size(P::AbstractGeneralizedPlant, i::Int) = (P.Nx+P.Nz+P.Ny, P.Nu+P.Nw)[i];
+Base.:size(P::AbstractGeneralizedPlant, i::Int) = (P.Nx+P.Nz+P.Ny, P.Nx+P.Nu+P.Nw)[i];
 Base.:ndims(P::AbstractGeneralizedPlant) = 2;
 
 # Overloads the iterate() interface to unpack the system matrices

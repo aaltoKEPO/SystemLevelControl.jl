@@ -30,3 +30,15 @@ P_large_dual = DualGeneralizedPlant{Float64,OutputFeedback}(P_large);
 @test P_large_adjoint == P_large'
 @test P_large_dual == P_large'
 @test P_large_dual == P_large_adjoint
+
+## Sparse large-scale state-feedback systems ____________________________
+P_SF_large = Plant(A, B₁, B₂, C₁, D₁₁, D₁₂)
+P_SF_large_adjoint = Plant(A', C₁', I(Nx), B₁', D₁₁', spzeros(Nw,Nx), B₂', D₁₂', spzeros(Nu,Nx))
+
+P_SF_large_dual = DualGeneralizedPlant{Float64,StateFeedback}(P_SF_large);
+
+@test P_SF_large === (P_SF_large')'
+@test P_SF_large_adjoint == P_SF_large'
+@test P_SF_large_dual == P_SF_large'
+@test P_SF_large_dual == P_SF_large_adjoint
+
