@@ -37,4 +37,16 @@ Base.:adjoint(P::DualGeneralizedPlant{T,Ts}) where {T,Ts} = P.parent
 
 Base.:view(P::AbstractGeneralizedPlant{T,Ts}, I::Tuple, J::Tuple) where {T,Ts} = GeneralizedSubPlant{T,Ts}(P,I,J)
 
+@inline
+function Base.:getindex(P::AbstractGeneralizedPlant{T,Ts}, I::Tuple, J::Tuple) where {T,Ts}
+    if Ts <: StateFeedback
+        return Plant(P.A[I[1],J[1]], P.B₁[I[1],J[2]], P.B₂[I[1],J[3]],
+                     P.C₁[I[2],J[1]], P.D₁₁[I[2],J[2]], P.D₁₂[I[2],J[3]])
+    else
+        return Plant(P.A[I[1],J[1]], P.B₁[I[1],J[2]], P.B₂[I[1],J[3]],
+                     P.C₁[I[2],J[1]], P.D₁₁[I[2],J[2]], P.D₁₂[I[2],J[3]],
+                     P.C₂[I[3],J[1]], P.D₂₁[I[3],J[2]], P.D₂₂[I[3],J[3]])
+    end
+end
+
 # ___________________________________________________________________________
