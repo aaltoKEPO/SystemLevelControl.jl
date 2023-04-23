@@ -2,7 +2,7 @@ name = "SystemLevelControl"
 uuid = "11287a3c-721d-43ad-9aed-eb4ab2d93a5d"
 authors = ["Otacilio 'Minho' Neto <otacilio.neto.aalto.fi>"]
 repo = "https://github.com/aaltoKEPO/SystemLevelControl.jl"
-version = "1.0.1-DEV"
+version = "1.1.0-DEV"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
