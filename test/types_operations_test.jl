@@ -7,6 +7,7 @@ using SystemLevelControl, Test
 using LinearAlgebra, SparseArrays
 # --
 
+## ADJOINT PLANTS _______________________________________________________
 ## Sparse large-scale systems ___________________________________________
 Nx,Nu,Nw,Ny = (100000, 52000, 51000, 50000)
 A = sprandn(Nx, Nx, 1/Nx);
@@ -24,21 +25,74 @@ D₂₂ = sprandn(Ny, Nu, 1/Nu);
 P_large = Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
 P_large_adjoint = Plant(A', C₁', C₂', B₁', D₁₁', D₂₁', B₂', D₁₂', D₂₂')
 
-P_large_dual = DualGeneralizedPlant{Float64,OutputFeedback}(P_large);
+P_large_dual = @inferred DualGeneralizedPlant{Float64,OutputFeedback}(P_large);
 
 @test P_large === (P_large')'
 @test P_large_adjoint == P_large'
 @test P_large_dual == P_large'
 @test P_large_dual == P_large_adjoint
 
+@test P_large' isa DualGeneralizedPlant{Float64,OutputFeedback}
+
 ## Sparse large-scale state-feedback systems ____________________________
 P_SF_large = Plant(A, B₁, B₂, C₁, D₁₁, D₁₂)
 P_SF_large_adjoint = Plant(A', C₁', I(Nx), B₁', D₁₁', spzeros(Nw,Nx), B₂', D₁₂', spzeros(Nu,Nx))
 
-P_SF_large_dual = DualGeneralizedPlant{Float64,StateFeedback}(P_SF_large);
+P_SF_large_dual = @inferred DualGeneralizedPlant{Float64,StateFeedback}(P_SF_large);
 
 @test P_SF_large === (P_SF_large')'
 @test P_SF_large_adjoint == P_SF_large'
 @test P_SF_large_dual == P_SF_large'
 @test P_SF_large_dual == P_SF_large_adjoint
 
+@test P_SF_large' isa DualGeneralizedPlant{Float64,StateFeedback}
+
+## SUBPLANTS / VIEWS ____________________________________________________
+## Sparse large-scale systems ___________________________________________
+II = (1:2000, [1:500; 900:1200], :);
+JJ = (1:2000, 1, [1; 3; 6]);
+
+P_large = Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
+P_large_slice = Plant(A[II[1],JJ[1]], B₁[II[1],JJ[2]], B₂[II[1],JJ[3]], 
+                      C₁[II[2],JJ[1]], D₁₁[II[2],JJ[2]], D₁₂[II[2],JJ[3]], 
+                      C₂[II[3],JJ[1]], D₂₁[II[3],JJ[2]], D₂₂[II[3],JJ[3]])
+
+P_large_subsystem = @inferred GeneralizedSubPlant{Float64,OutputFeedback}(P_large, II, JJ)
+
+@test P_large_subsystem === view(P_large, II, JJ)
+@test P_large_slice == view(P_large, II, JJ)
+@test P_large_slice == P_large_subsystem
+
+@test view(P_large, II, JJ) isa GeneralizedSubPlant{Float64,OutputFeedback}
+
+## Sparse large-scale state-feedback systems ____________________________
+# Explicit reference signal model
+II = (1:2000, [1:500; 900:1200]);
+JJ = (1:2000, 1, [1; 3; 6]);
+
+P_SF_large = Plant(A, B₁, B₂, C₁, D₁₁, D₁₂)
+P_SF_large_slice = Plant(A[II[1],JJ[1]], B₁[II[1],JJ[2]], B₂[II[1],JJ[3]], 
+                      C₁[II[2],JJ[1]], D₁₁[II[2],JJ[2]], D₁₂[II[2],JJ[3]])
+
+P_SF_large_subsystem = @inferred GeneralizedSubPlant{Float64,StateFeedback}(P_SF_large, II, JJ)
+
+@test P_SF_large_subsystem === view(P_SF_large, II, JJ)
+@test P_SF_large_slice == view(P_SF_large, II, JJ)
+@test P_SF_large_slice == P_SF_large_subsystem
+
+@test view(P_large, II, JJ) isa GeneralizedSubPlant{Float64,StateFeedback}
+
+# Standard reference signal model 
+II = (1:2000, [1:2000; Nx.+[1;3;6]]);    # The second argument must be explictly given
+JJ = (1:2000, 1, [1; 3; 6]);
+
+P_SF_large = Plant(A, B₁, B₂)
+P_SF_large_slice = Plant(A[II[1],JJ[1]], B₁[II[1],JJ[2]], B₂[II[1],JJ[3]])
+
+P_SF_large_subsystem = @inferred GeneralizedSubPlant{Float64,StateFeedback}(P_SF_large, II, JJ)
+
+@test P_SF_large_subsystem === view(P_SF_large, II, JJ)
+@test P_SF_large_slice == view(P_SF_large, II, JJ)
+@test P_SF_large_slice == P_SF_large_subsystem
+
+@test view(P_large, II, JJ) isa GeneralizedSubPlant{Float64,StateFeedback}

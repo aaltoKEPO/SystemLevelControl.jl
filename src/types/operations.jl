@@ -8,10 +8,10 @@
 
 # PLANT OPERATIONS __________________________________________________________
 function Base.:(==)(P1::AbstractGeneralizedPlant, P2::AbstractGeneralizedPlant)
-    if P1 isa DualGeneralizedPlant || P2 isa DualGeneralizedPlant   # This avoids elementwise comparison in adjoint arrays
-        return all(norm(getfield(P1,f)-getfield(P2,f)) <= eps() for f in fieldnames(GeneralizedPlant)[1:9])
+    if P1 isa GeneralizedPlant && P2 isa GeneralizedPlant   # This avoids elementwise comparison in adjoint arrays
+        return all(getfield(P1,f)==getfield(P2,f) for f in fieldnames(GeneralizedPlant))
     else 
-        return all(getfield(P1,f)==getfield(P2,f) for f in fieldnames(GeneralizedPlant)[1:9])
+        return all(norm(getfield(P1,f)-getfield(P2,f)) <= eps() for f in fieldnames(GeneralizedPlant)[1:9])
     end
 end
 
@@ -32,7 +32,9 @@ Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:D₂₂}) = return (P.D₂₂,
 Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:done}) = return nothing;
 
 # System/Block algebra
-Base.:adjoint(P::GeneralizedPlant{T,Ts}) where {T,Ts} = DualGeneralizedPlant{T,Ts}(P)
+Base.:adjoint(P::AbstractGeneralizedPlant{T,Ts}) where {T,Ts} = DualGeneralizedPlant{T,Ts}(P)
 Base.:adjoint(P::DualGeneralizedPlant{T,Ts}) where {T,Ts} = P.parent
+
+Base.:view(P::AbstractGeneralizedPlant{T,Ts}, I::Tuple, J::Tuple) where {T,Ts} = GeneralizedSubPlant{T,Ts}(P,I,J)
 
 # ___________________________________________________________________________

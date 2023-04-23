@@ -7,7 +7,7 @@ module SystemLevelControl
 # --
 
 export AbstractFeedbackStructure, StateFeedback, OutputFeedback
-export AbstractGeneralizedPlant, GeneralizedPlant, DualGeneralizedPlant, Plant
+export AbstractGeneralizedPlant, GeneralizedPlant, DualGeneralizedPlant, GeneralizedSubPlant, Plant
 export SLS_𝓗₂
 export sparsity_dim_reduction
 export generateTree
