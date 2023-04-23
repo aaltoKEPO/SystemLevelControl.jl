@@ -63,6 +63,9 @@ P_large_subsystem = @inferred GeneralizedSubPlant{Float64,OutputFeedback}(P_larg
 
 @test P_large_slice == P_large[II,JJ]
 
+@test P_large_subsystem !== copy(P_large_subsystem)
+@test P_large_subsystem == copy(P_large_subsystem)
+
 @test view(P_large, II, JJ) isa GeneralizedSubPlant{Float64,OutputFeedback}
 @test P_large[II,JJ] isa GeneralizedPlant{Float64,OutputFeedback}
 
@@ -82,6 +85,9 @@ P_SF_large_subsystem = @inferred GeneralizedSubPlant{Float64,StateFeedback}(P_SF
 
 @test P_SF_large_slice == P_SF_large[II,JJ]
 
+@test P_SF_large_subsystem !== copy(P_SF_large_subsystem)
+@test P_SF_large_subsystem == copy(P_SF_large_subsystem)
+
 @test view(P_SF_large, II, JJ) isa GeneralizedSubPlant{Float64,StateFeedback}
 @test P_SF_large[II,JJ] isa GeneralizedPlant{Float64,StateFeedback}
 
@@ -99,5 +105,28 @@ P_SF_large_subsystem = @inferred GeneralizedSubPlant{Float64,StateFeedback}(P_SF
 
 @test P_SF_large_slice == P_SF_large[II,JJ]
 
+@test P_SF_large_subsystem !== copy(P_SF_large_subsystem)
+@test P_SF_large_subsystem == copy(P_SF_large_subsystem)
+
 @test view(P_SF_large, II, JJ) isa GeneralizedSubPlant{Float64,StateFeedback}
 @test P_SF_large[II,JJ] isa GeneralizedPlant{Float64,StateFeedback}
+
+## NESTED OPERATIONS __________________________________________
+## Sparse large-scale systems _________________________________
+II = (1:2000, [1:500; 900:1200], :);
+JJ = (1:2000, 1, [1; 3; 6]);
+
+P_large = Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
+P_large_adjoint_subsystem = Plant(A'[II[1],JJ[1]], C₁'[II[1],JJ[2]], C₂'[II[1],JJ[3]], 
+                                  B₁'[II[2],JJ[1]], D₁₁'[II[2],JJ[2]], D₂₁'[II[2],JJ[3]], 
+                                  B₂'[II[3],JJ[1]], D₁₂'[II[3],JJ[2]], D₂₂'[II[3],JJ[3]])
+
+@test P_large_adjoint_subsystem == view(P_large', II, JJ)
+@test P_large_adjoint_subsystem == P_large'[II,JJ]
+
+P_large_subsystem_adjoint = Plant(A[II[1],JJ[1]]', C₁[II[2],JJ[1]]', C₂[II[3],JJ[1]]', 
+                                  B₁[II[1],JJ[2]]', D₁₁[II[2],JJ[2]]', D₂₁[II[3],JJ[2]]', 
+                                  B₂[II[1],JJ[3]]', D₁₂[II[2],JJ[3]]', D₂₂[II[3],JJ[3]]')
+
+@test P_large_subsystem_adjoint == view(P_large, II, JJ)'
+@test P_large_subsystem_adjoint == P_large[II,JJ]'

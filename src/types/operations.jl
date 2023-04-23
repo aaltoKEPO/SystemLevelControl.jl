@@ -7,6 +7,7 @@
 ##  and their specialized subtypes
 
 # PLANT OPERATIONS __________________________________________________________
+@inline
 function Base.:(==)(P1::AbstractGeneralizedPlant, P2::AbstractGeneralizedPlant)
     if P1 isa GeneralizedPlant && P2 isa GeneralizedPlant   # This avoids elementwise comparison in adjoint arrays
         return all(getfield(P1,f)==getfield(P2,f) for f in fieldnames(GeneralizedPlant))
@@ -33,9 +34,11 @@ Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:done}) = return nothing;
 
 # System/Block algebra
 Base.:adjoint(P::AbstractGeneralizedPlant{T,Ts}) where {T,Ts} = DualGeneralizedPlant{T,Ts}(P)
-Base.:adjoint(P::DualGeneralizedPlant{T,Ts}) where {T,Ts} = P.parent
+Base.:adjoint(P::DualGeneralizedPlant) = P.parent
 
 Base.:view(P::AbstractGeneralizedPlant{T,Ts}, I::Tuple, J::Tuple) where {T,Ts} = GeneralizedSubPlant{T,Ts}(P,I,J)
+
+Base.:copy(P::AbstractGeneralizedPlant) = Plant(P.A,P.B₁,P.B₂,P.C₁,P.D₁₁,P.D₁₂,P.C₂,P.D₂₁,P.D₂₂)
 
 @inline
 function Base.:getindex(P::AbstractGeneralizedPlant{T,Ts}, I::Tuple, J::Tuple) where {T,Ts}
@@ -48,5 +51,7 @@ function Base.:getindex(P::AbstractGeneralizedPlant{T,Ts}, I::Tuple, J::Tuple) w
                      P.C₂[I[3],J[1]], P.D₂₁[I[3],J[2]], P.D₂₂[I[3],J[3]])
     end
 end
+
+
 
 # ___________________________________________________________________________
