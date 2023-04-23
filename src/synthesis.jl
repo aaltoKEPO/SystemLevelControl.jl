@@ -44,7 +44,9 @@ function _SLS_𝓗₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Ab
         Φ̃ₓ = [@variable(problem, [1:P̃.Nx,1:P̃.Nw]) for _ in 1:T];
         Φ̃ᵤ = [@variable(problem, [1:P̃.Nu,1:P̃.Nw]) for _ in 1:T];
         
-        @objective( problem,    Min,    norm([C̃₁,D̃₁₂]*[Φ̃ₓ,Φ̃ᵤ]*[B̃₁,D̃₂₁] + D̃₁₁, :𝓗₂) + L⁺([Φ̃ₓ,Φ̃ᵤ],cⱼ) ); # <~ L^+ is not parallelized
+        H_w2z = _create_SLS_ref_operator(problem, [C̃₁ D̃₁₂], Φ̃ₓ, Φ̃ᵤ, [B̃₁; D̃₂₁], D̃₁₁);
+
+        @objective( problem,    Min,    norm(H_w2z, :𝓗₂) + L⁺([Φ̃ₓ,Φ̃ᵤ],cⱼ) ); # <~ L^+ is not parallelized
         @constraint(problem,                Φ̃ₓ[1]   .== Ĩ);
         @constraint(problem, [t = 1:(T-1)], Φ̃ₓ[t+1] .== Ã*Φ̃ₓ[t] + B̃₂*Φ̃ᵤ[t]);
         @constraint(problem,                   0    .== Ã*Φ̃ₓ[T] + B̃₂*Φ̃ᵤ[T]);
@@ -67,14 +69,10 @@ function _SLS_𝓗₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Ab
 end 
 
 
-# OPERATOR OVERLOADS (AUXILIARY) ________________________________________
-
-# This is working but SHOULD be done better. Specifically, it's causing some memory leak
-LinearAlgebra.:*(A::Vector{SparseMatrixCSC{T,Int64}}, B::Vector{Vector{Matrix{VariableRef}}}) where {T<:Real} = hcat(A...) * vcat.(B...)
-LinearAlgebra.:*(A::Vector{Matrix{AffExpr}}, B::Vector{SparseMatrixCSC{T,Int64}}) where {T<:Real} = A * vcat(B...)
-LinearAlgebra.:*(A::SparseMatrixCSC{T,Int64}, B::Vector{Matrix{VariableRef}}) where {T<:Real} = [A*b for b in B]
-LinearAlgebra.:*(B::Vector{Matrix{AffExpr}}, A::SparseMatrixCSC{T,Int64}) where {T<:Real} = [b*A for b in B]
-LinearAlgebra.:+(B::Vector{Matrix{AffExpr}}, A::SparseMatrixCSC{T,Int64}) where {T<:Real} = [b+A for b in B]
+# OPERATOR OVERLOADS / AUXILIARY FUNCTIONS ______________________________
+function _create_SLS_ref_operator(problem::Model, L::AbstractMatrix, Φ̃ₓ::Vector{Matrix{VariableRef}}, Φ̃ᵤ::Vector{Matrix{VariableRef}}, R::AbstractMatrix, D::AbstractMatrix)
+    return [@expression(problem, L*[Φ[1];Φ[2]]*R + D) for Φ in zip(Φ̃ₓ,Φ̃ᵤ)]
+end
 
 LinearAlgebra.:norm(A::AbstractVector{T}, t::Symbol) where T = begin
     if t === :𝓗₂

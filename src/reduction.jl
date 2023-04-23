@@ -12,13 +12,10 @@ function sparsity_dim_reduction(P::AbstractGeneralizedPlant, cⱼ::AbstractVecto
     # Defines the reduced model
     if P isa AbstractGeneralizedPlant{T,StateFeedback} where T
         sₓ,sᵤ = (unique(findnz((𝓢ⱼ[end]*(P.A.≠0))[:,cⱼ])[1]) for 𝓢ⱼ in 𝓢);   
-        P̃ = Plant(P.A[sₓ,sₓ],              P.B₁[sₓ,cⱼ],            P.B₂[sₓ,sᵤ],
-                  P.C₁[[sₓ;P.Nx.+sᵤ], sₓ], P.D₁₁[[sₓ;P.Nx.+sᵤ],cⱼ], P.D₁₂[[sₓ;P.Nx.+sᵤ],sᵤ])
+        P̃ = view(P, (sₓ, [sₓ;P.Nx.+sᵤ]), (sₓ, cⱼ, sᵤ));
     else
         sₓ,sᵤ,sᵧ = (unique(findnz((𝓢ⱼ[end])[:,cⱼ])[1]) for 𝓢ⱼ in 𝓢);   
-        P̃ = Plant(P.A[sₓ,sₓ],              P.B₁[sₓ,cⱼ],            P.B₂[sₓ,sᵤ],
-                  P.C₁[[sₓ;P.Nx.+sᵤ], sₓ], P.D₁₁[ [sₓ;P.Nx.+sᵤ],cⱼ], P.D₁₂[[sₓ;P.Nx.+sᵤ],sᵤ],
-                  P.C₂[sᵧ,sₓ],              P.B₁[sᵧ,cⱼ],            P.B₂[sᵧ,sᵤ])
+        P̃ = view(P, (sₓ, [sₓ;P.Nx.+sᵤ], sᵧ), (sₓ, cⱼ, sᵤ));
     end
 
     # Appropriate identity matrix from original state-space
