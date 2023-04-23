@@ -7,9 +7,17 @@
 ##  and their specialized subtypes
 
 # PLANT OPERATIONS __________________________________________________________
-Base.:(==)(P1::GeneralizedPlant, P2::GeneralizedPlant) = all(getfield(P1,f)==getfield(P2,f) for f in fieldnames(GeneralizedPlant))
-Base.:size(P::AbstractGeneralizedPlant) = (P.Nx+P.Nz+P.Ny, P.Nu+P.Nw);
-Base.:size(P::AbstractGeneralizedPlant, i::Int) = (P.Nx+P.Nz+P.Ny, P.Nu+P.Nw)[i];
+@inline
+function Base.:(==)(P1::AbstractGeneralizedPlant, P2::AbstractGeneralizedPlant)
+    if P1 isa GeneralizedPlant && P2 isa GeneralizedPlant   # This avoids elementwise comparison in adjoint arrays
+        return all(getfield(P1,f)==getfield(P2,f) for f in fieldnames(GeneralizedPlant))
+    else 
+        return all(norm(getfield(P1,f)-getfield(P2,f)) <= eps() for f in fieldnames(GeneralizedPlant)[1:9])
+    end
+end
+
+Base.:size(P::AbstractGeneralizedPlant) = (P.Nx+P.Nz+P.Ny, P.Nx+P.Nu+P.Nw);
+Base.:size(P::AbstractGeneralizedPlant, i::Int) = (P.Nx+P.Nz+P.Ny, P.Nx+P.Nu+P.Nw)[i];
 Base.:ndims(P::AbstractGeneralizedPlant) = 2;
 
 # Overloads the iterate() interface to unpack the system matrices
@@ -25,7 +33,25 @@ Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:D₂₂}) = return (P.D₂₂,
 Base.:iterate(P::AbstractGeneralizedPlant, ::Val{:done}) = return nothing;
 
 # System/Block algebra
-Base.:adjoint(P::AbstractGeneralizedPlant{T,OutputFeedback}) where {T} = Plant(P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', P.D₂₁', P.B₂', P.D₁₂', P.D₂₂')
-Base.:adjoint(P::AbstractGeneralizedPlant{T,StateFeedback}) where {T} = Plant(P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', spzeros(size(P.B₁))', P.B₂', P.D₁₂', spzeros(size(P.B₂))')
+Base.:adjoint(P::AbstractGeneralizedPlant{T,Ts}) where {T,Ts} = DualGeneralizedPlant{T,Ts}(P)
+Base.:adjoint(P::DualGeneralizedPlant) = P.parent
+
+Base.:view(P::AbstractGeneralizedPlant{T,Ts}, I::Tuple, J::Tuple) where {T,Ts} = GeneralizedSubPlant{T,Ts}(P,I,J)
+
+Base.:copy(P::AbstractGeneralizedPlant) = Plant(P.A,P.B₁,P.B₂,P.C₁,P.D₁₁,P.D₁₂,P.C₂,P.D₂₁,P.D₂₂)
+
+@inline
+function Base.:getindex(P::AbstractGeneralizedPlant{T,Ts}, I::Tuple, J::Tuple) where {T,Ts}
+    if Ts <: StateFeedback
+        return Plant(P.A[I[1],J[1]], P.B₁[I[1],J[2]], P.B₂[I[1],J[3]],
+                     P.C₁[I[2],J[1]], P.D₁₁[I[2],J[2]], P.D₁₂[I[2],J[3]])
+    else
+        return Plant(P.A[I[1],J[1]], P.B₁[I[1],J[2]], P.B₂[I[1],J[3]],
+                     P.C₁[I[2],J[1]], P.D₁₁[I[2],J[2]], P.D₁₂[I[2],J[3]],
+                     P.C₂[I[3],J[1]], P.D₂₁[I[3],J[2]], P.D₂₂[I[3],J[3]])
+    end
+end
+
+
 
 # ___________________________________________________________________________

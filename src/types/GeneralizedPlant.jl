@@ -106,6 +106,68 @@ end
 Plant(args...; kwargs...) = GeneralizedPlant(args...; kwargs...)
 
 
+# SPECIAL AUXILIARY TYPES ______________________________________________________
+struct DualGeneralizedPlant{T,Ts} <: AbstractGeneralizedPlant{T,Ts}
+    # Fields
+    parent::AbstractGeneralizedPlant{T,Ts}
+    A::Adjoint
+    B₁::Adjoint
+    B₂::Adjoint
+    C₁::Adjoint
+    D₁₁::Adjoint
+    D₁₂::Adjoint
+    C₂::Adjoint
+    D₂₁::Adjoint
+    D₂₂::Adjoint
+    Nx::Integer; Nz::Integer; Ny::Integer; Nw::Integer; Nu::Integer;
+
+    # Explicit constructors
+    function DualGeneralizedPlant{T,Ts}(P::AbstractGeneralizedPlant{T,Ts}) where {T<:Number,Ts<:OutputFeedback}
+        new{T,Ts}(P, P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', P.D₂₁', P.B₂', P.D₁₂', P.D₂₂', P.Nx, P.Nw, P.Nu, P.Nz, P.Ny)
+    end
+
+    function DualGeneralizedPlant{T,Ts}(P::AbstractGeneralizedPlant{T,Ts}) where {T<:Number,Ts<:StateFeedback}
+        new{T,Ts}(P, P.A', P.C₁', P.C₂', P.B₁', P.D₁₁', spzeros(size(P.B₁))', P.B₂', P.D₁₂', spzeros(size(P.B₂))', P.Nx, P.Nw, P.Nu, P.Nz, P.Ny)
+    end
+end
+
+struct GeneralizedSubPlant{T,Ts} <: AbstractGeneralizedPlant{T,Ts}
+    # Fields
+    parent::AbstractGeneralizedPlant{T,Ts}
+    A::SubArray
+    B₁::SubArray
+    B₂::SubArray
+    C₁::SubArray
+    D₁₁::SubArray
+    D₁₂::SubArray
+    C₂::SubArray
+    D₂₁::SubArray
+    D₂₂::SubArray
+    Nx::Integer; Nz::Integer; Ny::Integer; Nw::Integer; Nu::Integer;
+
+    # Explicit constructors
+    function GeneralizedSubPlant{T,Ts}(P::AbstractGeneralizedPlant{T,Ts},I::Tuple,J::Tuple) where {T<:Number,Ts<:AbstractFeedbackStructure}
+        A = view(P.A, I[1], J[1])  
+        B₁ = view(P.B₁, I[1], J[2])   
+        B₂ = view(P.B₂, I[1], J[3])
+        C₁ = view(P.C₁, I[2], J[1])
+        D₁₁ = view(P.D₁₁, I[2], J[2]) 
+        D₁₂ = view(P.D₁₂, I[2], J[3])
+        
+        if Ts <: StateFeedback
+            C₂ = view(P.C₂, I[1], J[1])
+            D₂₁ = view(P.D₂₁, :, J[2])
+            D₂₂ = view(P.D₂₂, :, J[3])
+        else 
+            C₂ = view(P.C₂, I[3], J[1])
+            D₂₁ = view(P.D₂₁, I[3], J[2])
+            D₂₂ = view(P.D₂₂, I[3], J[3])
+        end
+        
+        new{T,Ts}(P, A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂, size(A,1), size(C₁,1), size(C₂,1), size(B₁,2), size(B₂,2))
+    end
+end
+
 # VALIDATIONS AND AUXILIARY FUNCTIONS __________________________________________
 Base.show(io::IO, P::AbstractGeneralizedPlant) = print(io, "$(size(P,1))×$(size(P,2)) $(typeof(P)) w/ $(P.Nx) states, $(P.Ny) outputs, $(P.Nu) controls.")
 
