@@ -17,7 +17,7 @@ This package is currently not in the official registry.
 In order to use **SystemLevelControl.jl**, you can add this repository directly:
 
 ```julia
-using Pkg; Pkg.add("https://github.com/aaltoKEPO/SystemLevelControl.jl")
+using Pkg; Pkg.add(url="https://github.com/aaltoKEPO/SystemLevelControl.jl")
 ```
 
 or entering `]add https://github.com/aaltoKEPO/SystemLevelControl.jl` in the Julia REPL. 

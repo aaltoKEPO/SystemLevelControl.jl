@@ -3,6 +3,11 @@
 # This code is part of the 'SystemLevelControl.jl' package, licensed
 # the MIT License (see <https://spdx.org/licenses/MIT.html> )                
 # -----------------------------------------------------------------------
+"""
+    AbstractGeneralizedPlant{T<:Number,Ts<:AbstractFeedbackStructure}
+
+An abstract type for subtyping generalized plant models.
+"""
 abstract type AbstractGeneralizedPlant{T<:Number,Ts<:AbstractFeedbackStructure} end
 # --
 
@@ -11,6 +16,32 @@ const NumberOrAbstractArray = Union{Number, AbstractArray}
 const EyeOrNumberOrAbstractArray = Union{UniformScaling, NumberOrAbstractArray}
 
 # PLANT DATA TYPE DECLARATIONS _______________________________________________
+"""
+    GeneralizedPlant{T,Ts} <: AbstractGeneralizedPlant{T<:Number,Ts<:AbstractFeedbackStructure}
+
+A type representing a generalized state-space model
+```math
+P = \\left[\\begin{array}{c | c c}
+        A & B_1 & B_2 \\\\
+        \\hline
+        C_1 & D_11 & D_12 \\\\
+        C_2 & D_21 & D_22 
+      \\end{array}\\right]
+```
+
+See the function [`Plant`](@ref) for a user-friendly constructor of generalized plants. For detailed instructions check the documentation on [Plants and controllers](https://aaltokepo.github.io/SystemLevelControl.jl/dev/man/Plants_and_controllers/index.html).
+
+# Fields 
+- `A::SparseMatrixCSC{T,Int}`
+- `B₁::SparseMatrixCSC{T,Int}`
+- `B₂::SparseMatrixCSC{T,Int}`
+- `C₁::SparseMatrixCSC{T,Int}`
+- `D₁₁::SparseMatrixCSC{T,Int}`
+- `D₁₂::SparseMatrixCSC{T,Int}`
+- `C₂::SparseMatrixCSC{T,Int}`
+- `D₂₁::SparseMatrixCSC{T,Int}`
+- `D₂₂::SparseMatrixCSC{T,Int}`
+"""
 struct GeneralizedPlant{T,Ts} <: AbstractGeneralizedPlant{T,Ts}
     # Fields
     A::SparseMatrixCSC{T,Int}
@@ -103,6 +134,59 @@ function GeneralizedPlant(Σ::AbstractArray{T}, DIMS::AbstractArray{Int}) where 
 end
 
 # User-friendly constructor interface
+"""
+    P = Plant(A, B₁, B₂[, C₁, D₁₁, D₁₁, C₂, D₂₁, D₂₂])
+
+Creates a generalized plant model `P::GeneralizedPlant{T,Ts}` with matrices of type `T<:Number`
+and feedback structure `Ts<:AbstractFeedback`. 
+
+If the matrices `C₂`, `D₂₁`, and `D₂₂` are unspecified, the function automatically sets `C₂ = I`  
+and returns a state-feedback plant (`Ts<:StateFeedback`). If the matrices `C₂`, `D₁₁`, and `D₁₂` 
+are unspecified, the function assumes the standard LQR-type reference signal \$z^Tz = x^Tx + u^Tu\$ 
+with `C₁ = [I; 0]` and `D₁₂ = [0; I]`.
+
+In case `D₁₁ = 0` and/or `D₂₂ = 0`, a matrix of appropriate dimensions is created. Similarly, 
+if `C₂ = I` then the output matrix of appropriate dimension is created.
+
+# Examples 
+```julia-repl
+julia> A = randn(100,100);  B₁ = randn(100,100);  B₂ = randn(100,50);
+
+julia> C₁ = randn(150,100);  D₁₂ = randn(150,50);
+
+julia> D₂₁ = randn(100,100);
+
+julia> P = Plant(A, B₁, B₂, C₁, 0, D₁₂, I, D₂₁, 0)
+350×250 GeneralizedPlant{Float64, OutputFeedback} w/ 100 states, 100 outputs, 50 controls.
+
+julia> P = Plant(A, B₁, B₂)
+350×250 GeneralizedPlant{Float64, StateFeedback} w/ 100 states, 100 outputs, 50 controls.
+```
+
+---
+
+P = Plant(Σ, DIMS)
+
+Creates a generalized plant model `P::GeneralizedPlant{T,Ts}` based on a single matrix representation
+`Σ::AbstractMatrix` to be partitioned according to dimensions `DIMS = [Nx, Nz, Ny, Nw, Nu]`.
+
+If `length(DIMS) = 4`, then a state-feedback plant is constructed by slicing `Σ` with `DIMS = [Nx, Nz, Nw, Nu]`.
+
+# Examples 
+```julia-repl
+julia> A = randn(100,100);  B₁ = randn(100,100);  B₂ = randn(100,50);
+
+julia> C₁ = randn(150,100);  D₁₂ = randn(150,50);
+
+julia> D₂₁ = randn(100,100);
+
+julia> P = Plant([A B₁ B₂; C₁ zeros(150,100) D₁₂; I D₂₁ zeros(100,50)], [100, 150, 100, 100, 50])
+350×250 GeneralizedPlant{Float64, OutputFeedback} w/ 100 states, 100 outputs, 50 controls.
+
+julia> P = Plant([A B₁ B₂; C₁ zeros(150,100) D₁₂], [100, 150, 100, 50])
+350×250 GeneralizedPlant{Float64, StateFeedback} w/ 100 states, 100 outputs, 50 controls.
+```
+"""
 Plant(args...; kwargs...) = GeneralizedPlant(args...; kwargs...)
 
 

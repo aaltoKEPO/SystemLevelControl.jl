@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="189.77187mm"
+   height="93.209389mm"
+   version="1.1"
+   viewBox="0 0 189.77187 93.209391"
+   id="svg218"
+   sodipodi:docname="logo.svg"
+   inkscape:version="1.0.2 (e86c870879, 2021-01-15)">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1029"
+     id="namedview220"
+     showgrid="false"
+     inkscape:zoom="0.45694602"
+     inkscape:cx="-27.74494"
+     inkscape:cy="724.75109"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg218"
+     inkscape:document-rotation="0" />
+  <defs
+     id="defs74">
+    <marker
+       id="marker35110"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#ffffff"
+         fill-rule="evenodd"
+         stroke="#ffffff"
+         stroke-width="1pt"
+         id="path2" />
+    </marker>
+    <marker
+       id="marker35100"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#ffffff"
+         fill-rule="evenodd"
+         stroke="#ffffff"
+         stroke-width="1pt"
+         id="path5" />
+    </marker>
+    <marker
+       id="marker35090"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#ffffff"
+         fill-rule="evenodd"
+         stroke="#ffffff"
+         stroke-width="1pt"
+         id="path8" />
+    </marker>
+    <marker
+       id="marker35080"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#ffffff"
+         fill-rule="evenodd"
+         stroke="#ffffff"
+         stroke-width="1pt"
+         id="path11" />
+    </marker>
+    <marker
+       id="marker35070"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#ffffff"
+         fill-rule="evenodd"
+         stroke="#ffffff"
+         stroke-width="1pt"
+         id="path14" />
+    </marker>
+    <marker
+       id="marker35060"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#ffffff"
+         fill-rule="evenodd"
+         stroke="#ffffff"
+         stroke-width="1pt"
+         id="path17" />
+    </marker>
+    <marker
+       id="marker35050"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#ffffff"
+         fill-rule="evenodd"
+         stroke="#ffffff"
+         stroke-width="1pt"
+         id="path20" />
+    </marker>
+    <marker
+       id="marker35040"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#ffffff"
+         fill-rule="evenodd"
+         stroke="#ffffff"
+         stroke-width="1pt"
+         id="path23" />
+    </marker>
+    <marker
+       id="marker34370"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path26" />
+    </marker>
+    <marker
+       id="marker34360"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path29" />
+    </marker>
+    <marker
+       id="marker34350"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path32" />
+    </marker>
+    <marker
+       id="marker34340"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path35" />
+    </marker>
+    <marker
+       id="marker34330"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path38" />
+    </marker>
+    <marker
+       id="marker34320"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path41" />
+    </marker>
+    <marker
+       id="marker34310"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path44" />
+    </marker>
+    <marker
+       id="marker34300"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path47" />
+    </marker>
+    <marker
+       id="marker30903"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path50" />
+    </marker>
+    <marker
+       id="marker30893"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path53" />
+    </marker>
+    <marker
+       id="marker30883"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path56" />
+    </marker>
+    <marker
+       id="marker30873"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path59" />
+    </marker>
+    <marker
+       id="marker30863"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path62" />
+    </marker>
+    <marker
+       id="marker30853"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path65" />
+    </marker>
+    <marker
+       id="marker30843"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path68" />
+    </marker>
+    <marker
+       id="marker30833"
+       overflow="visible"
+       orient="auto">
+      <path
+         transform="scale(0.2)"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         fill="#2a2a2a"
+         fill-rule="evenodd"
+         stroke="#2a2a2a"
+         stroke-width="1pt"
+         id="path71" />
+    </marker>
+  </defs>
+  <metadata
+     id="metadata76">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <text
+     font-family="sans-serif"
+     font-size="21.166px"
+     style="line-height:1.25;white-space:pre;shape-inside:url(#rect13889);stroke-width:2;"
+     xml:space="preserve"
+     id="text124"
+     x="-120.432"
+     y="-61.842312" />
+  <g
+     stroke-width="0.51669"
+     id="g184"
+     transform="matrix(2,0,0,2,-120.432,-61.842308)">
+    <circle
+       cx="81.828003"
+       cy="37.688999"
+       r="6.5095"
+       fill="#cb3c33"
+       stroke="#cb3c33"
+       id="circle178" />
+    <circle
+       cx="132.91"
+       cy="37.688999"
+       r="6.5095"
+       fill="#9558b2"
+       stroke="#9558b2"
+       id="circle180" />
+    <rect
+       x="102.75"
+       y="33.067001"
+       width="9.2453003"
+       height="9.2453003"
+       ry="1.5002"
+       fill="#2a2a2a"
+       stroke="#2a2a2a"
+       id="rect182" />
+  </g>
+  <g
+     fill="none"
+     stroke="#2a2a2a"
+     id="g210"
+     transform="matrix(2,0,0,2,-120.432,-61.842308)">
+    <g
+       id="g198">
+      <path
+         d="M 89.121,37.689 H 99.706"
+         marker-end="url(#marker34300)"
+         stroke-width="1.5875"
+         id="path188" />
+      <g
+         stroke-width="1.5875"
+         id="g196">
+        <path
+           d="m 112.78,37.689 h 10.582"
+           marker-end="url(#marker34310)"
+           id="path190" />
+        <path
+           d="m 60.216,37.689 h 12.06"
+           marker-end="url(#marker34320)"
+           id="path192" />
+        <path
+           d="m 140.21,37.689 h 12.637"
+           marker-end="url(#marker34330)"
+           id="path194" />
+      </g>
+    </g>
+    <g
+       stroke-linejoin="round"
+       stroke-width="1.5875"
+       id="g208">
+      <path
+         d="M 99.815,54.224 H 95.6193 V 40.91"
+         marker-end="url(#marker34340)"
+         id="path200" />
+      <path
+         d="m 120.02,38.147 v 16.077 h -3.1013"
+         marker-end="url(#marker34350)"
+         id="path202" />
+      <path
+         d="M 67.517,37.682 V 70.758 H 97.816"
+         marker-end="url(#marker34360)"
+         id="path204" />
+      <path
+         d="m 114.82,70.758 h 31.546 V 40.91"
+         marker-end="url(#marker34370)"
+         id="path206" />
+    </g>
+  </g>
+  <circle
+     cx="94.308006"
+     cy="79.673698"
+     r="13.019"
+     fill="#4063d8"
+     stroke="#4063d8"
+     stroke-width="1.03338"
+     id="circle212" />
+  <circle
+     cx="94.308006"
+     cy="46.605686"
+     r="13.019"
+     fill="#389826"
+     stroke="#389826"
+     stroke-width="1.03338"
+     id="circle214" />
+</svg>
