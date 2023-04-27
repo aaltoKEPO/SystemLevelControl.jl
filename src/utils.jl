@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------
 ## Copyright (C) 2023- by Otacilio 'Minho' Neto, <otacilio.neto@aalto.fi>
-# This code is part of the 'SystemLevelControl.jl' package, licensed
+# This code is part of the 'SystemLevelControl.jl' package, licensed by
 # the MIT License (see <https://spdx.org/licenses/MIT.html> )                
 # -----------------------------------------------------------------------
 ## This file defines some auxiliary functions and data-types mainly

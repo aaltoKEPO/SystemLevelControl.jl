@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------
 ## Copyright (C) 2023- by Otacilio 'Minho' Neto, <otacilio.neto@aalto.fi>
-# This code is part of the 'SystemLevelControl.jl' package, licensed
+# This code is part of the 'SystemLevelControl.jl' package, licensed by
 # the MIT License (see <https://spdx.org/licenses/MIT.html> )                
 # -----------------------------------------------------------------------
 """
@@ -24,8 +24,8 @@ A type representing a generalized state-space model
 P = \\left[\\begin{array}{c | c c}
         A & B_1 & B_2 \\\\
         \\hline
-        C_1 & D_11 & D_12 \\\\
-        C_2 & D_21 & D_22 
+        C_1 & D_{11} & D_{12} \\\\
+        C_2 & D_{21} & D_{22} 
       \\end{array}\\right]
 ```
 
@@ -165,7 +165,7 @@ julia> P = Plant(A, B₁, B₂)
 
 ---
 
-P = Plant(Σ, DIMS)
+    P = Plant(Σ, DIMS)
 
 Creates a generalized plant model `P::GeneralizedPlant{T,Ts}` based on a single matrix representation
 `Σ::AbstractMatrix` to be partitioned according to dimensions `DIMS = [Nx, Nz, Ny, Nw, Nu]`.
@@ -191,10 +191,26 @@ Plant(args...; kwargs...) = GeneralizedPlant(args...; kwargs...)
 
 
 # SPECIAL AUXILIARY TYPES ______________________________________________________
+"""
+    DualGeneralizedPlant{T,Ts} <: AbstractGeneralizedPlant{T<:Number,Ts<:AbstractFeedbackStructure}
+
+A type representing an adjoint (or dual) state-space
+```math
+P^* = \\left[\\begin{array}{c | c c}
+        A^* & C_1^* & C_2^* \\\\
+        \\hline
+        B_1^* & D_{11}^* & D_{21}^* \\\\
+        B_2^* & D_{12}^* & D_{22}^* 
+      \\end{array}\\right]
+```
+
+!!! note
+    Avoid directly constructing objects of this type. Instead, create a `P::GeneralizedPlant` and use `adjoint(P)` function or `P'`.
+"""
 struct DualGeneralizedPlant{T,Ts} <: AbstractGeneralizedPlant{T,Ts}
     # Fields
     parent::AbstractGeneralizedPlant{T,Ts}
-    A::Adjoint
+    A::Adjoint  
     B₁::Adjoint
     B₂::Adjoint
     C₁::Adjoint
@@ -215,6 +231,23 @@ struct DualGeneralizedPlant{T,Ts} <: AbstractGeneralizedPlant{T,Ts}
     end
 end
 
+"""
+    GeneralizedSubPlant{T,Ts} <: AbstractGeneralizedPlant{T<:Number,Ts<:AbstractFeedbackStructure}
+
+A type representing a partition of a state-space
+```math
+\\tilde{P} = \\left[\\begin{array}{c | c c}
+        [A]_{I_1,J_1} & [B_1]_{I_1,J_2} & [B_2]_{I_1,J_3} \\\\
+        \\hline
+        [C_1]_{I_2,J_1} & [D_{11}]_{I_2,J_2} & [D_{12}]_{I_2,J_3} \\\\
+        [C_2]_{I_3,J_1} & [D_{21}]_{I_3,J_2} & [D_{22}]_{I_3,J_3} 
+      \\end{array}\\right]
+```
+where \$I = (I_1,I_2,I_3)\$ and \$J=(J_1,J_2,J_3)\$ are the desired partition index sets.
+
+!!! note
+    Avoid directly constructing objects of this type. Instead, create a `P::GeneralizedPlant` and use `view(P, I, J)` with tuples `I = (I₁,I₂,I₃)` and `J = (J₁,J₂,J₃)` describing the desired paritioning. To materialize the subsystem into a new `GeneralizedPlant`, use `copy`.
+"""
 struct GeneralizedSubPlant{T,Ts} <: AbstractGeneralizedPlant{T,Ts}
     # Fields
     parent::AbstractGeneralizedPlant{T,Ts}
