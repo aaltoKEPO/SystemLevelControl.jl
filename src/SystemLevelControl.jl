@@ -6,11 +6,21 @@
 module SystemLevelControl
 # --
 
-export AbstractFeedbackStructure, StateFeedback, OutputFeedback
-export AbstractGeneralizedPlant, GeneralizedPlant, DualGeneralizedPlant, GeneralizedSubPlant, Plant
-export SLS_𝓗₂
-export sparsity_dim_reduction
-export generateTree
+export # Plant and controller types
+       AbstractFeedbackStructure, 
+       StateFeedback, 
+       OutputFeedback,
+       AbstractGeneralizedPlant, 
+       GeneralizedPlant, 
+       DualGeneralizedPlant, 
+       GeneralizedSubPlant, 
+       Plant,
+       # Synthesis methods
+       SLS_𝓗₂,
+       # Dimensionality reduction methods
+       sparsity_dim_reduction,
+       # Utils and auxiliary functions
+       generateTree
 
 # Sub-modules (in separate files)
 using Distributed, SharedArrays

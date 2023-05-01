@@ -13,7 +13,7 @@ function SLS_𝓗₂(P::AbstractGeneralizedPlant, 𝓢::AbstractVector; 𝓘=not
     if P isa GeneralizedPlant{T,StateFeedback} where {T}
         # Auxiliary variables
         𝓘 = (𝓘 === nothing) ? [[i] for i in 1:P.Nx] : 𝓘;
-        𝓒 = Iterators.partition( 𝓘, ceil(Int, length(𝓘)/nworkers()) );
+        𝓒 = Iterators.partition(𝓘, ceil(Int, length(𝓘)/nworkers()));
         
         # Unpack the internal function arguments
         𝓢ₓ,𝓢ᵤ = 𝓢;
@@ -49,7 +49,7 @@ function _SLS_𝓗₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Ab
         
         H_w2z = _create_SLS_ref_operator(problem, [C̃₁ D̃₁₂], Φ̃ₓ, Φ̃ᵤ, [B̃₁; D̃₂₁], D̃₁₁);
 
-        @objective( problem,      Min,      norm(H_w2z, :𝓗₂) + L⁺([Φ̃ₓ,Φ̃ᵤ],cⱼ) ); # <~ L^+ is not parallelized
+        @objective(problem,      Min,      norm(H_w2z, :𝓗₂) + L⁺([Φ̃ₓ,Φ̃ᵤ],cⱼ)); # <~ L^+ is not parallelized
         @constraint(problem,                Φ̃ₓ[1]   .== Ĩ);
         @constraint(problem, [t = 1:(T-1)], Φ̃ₓ[t+1] .== Ã*Φ̃ₓ[t] + B̃₂*Φ̃ᵤ[t]);
         @constraint(problem,                   0    .== Ã*Φ̃ₓ[T] + B̃₂*Φ̃ᵤ[T]);
