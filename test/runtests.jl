@@ -10,5 +10,7 @@ using Test, SafeTestsets
     @time @safetestset "(Types) GeneralizedPlant composite type" begin include("types_GeneralizedPlant_test.jl") end
     @time @safetestset "(Types) Operations on AbstractGeneralizedPlants" begin include("types_operations_test.jl") end
     #
+    @time @safetestset "Control synthesis methods" begin include("synthesis_test.jl") end
+    #
     @time @safetestset "dimensionality reduction methods" begin include("reduction_test.jl") end
 end
