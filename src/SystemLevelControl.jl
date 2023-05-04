@@ -25,7 +25,7 @@ export # Plant and controller types
 # Sub-modules (in separate files)
 using Distributed, SharedArrays
 using LinearAlgebra, Statistics, Distributions
-using JuMP, Ipopt
+using JuMP, Ipopt, SCS
 using SparseArrays
 
 include("types/FeedbackStructures.jl") 

@@ -43,7 +43,7 @@ function _SLS_𝓗₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Ab
         D̃₂₁ = isempty(D̃₂₁) ? D̃₂₁ : D̃₂₁[iiₓ,:];
 
         # Designs and solves the OCP associated with subsystem P̃
-        problem = Model(Ipopt.Optimizer); set_silent(problem)
+        problem = Model(SCS.Optimizer); set_silent(problem)
         Φ̃ₓ = [@variable(problem, [1:P̃.Nx,1:P̃.Nw]) for _ in 1:T];
         Φ̃ᵤ = [@variable(problem, [1:P̃.Nu,1:P̃.Nw]) for _ in 1:T];
         
@@ -79,7 +79,7 @@ end
 
 LinearAlgebra.:norm(A::AbstractVector{T}, t::Symbol) where T = begin
     if t === :𝓗₂
-        return sum([tr(Aₜ'Aₜ) for Aₜ in A]);
+        return sum([tr(Aₜ'Aₜ) for Aₜ in A]) / 2π;
     else        
         throw(ArgumentError("The argument '$(t)' is not a valid norm type."));
     end
