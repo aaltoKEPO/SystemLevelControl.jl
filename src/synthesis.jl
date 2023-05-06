@@ -35,50 +35,49 @@ function _SLS_𝓗₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Ab
     # Optimization loop _________________________________________________
     Φ̃ = [[spzeros(P.Nx,P.Nx) for _ in 1:T] [spzeros(P.Nu,P.Nx) for _ in 1:T]];      # SLS Mappings
     for cⱼ in Cⱼ
-        # Dimensionality reduction
-        #  Obtains a reduced-order system based on the sparsity in 𝓢
-        (P̃,Ĩ,iiₓ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, [𝓢ₓ,𝓢ᵤ]);
-        Ã,B̃₁,B̃₂, C̃₁,D̃₁₁,D̃₁₂, C̃₂,D̃₂₁,D̃₂₂  = P̃;
-        B̃₁ = isempty(B̃₁) ? B̃₁ : B̃₁[iiₓ,:];
-        D̃₂₁ = isempty(D̃₂₁) ? D̃₂₁ : D̃₂₁[iiₓ,:];
+        (P̃,Ĩ,iiₓ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, [𝓢ₓ,𝓢ᵤ]);   #  Obtains a reduced-order system based on the sparsity in 𝓢
 
-        # Designs and solves the OCP associated with subsystem P̃
         if length(cⱼ) == 1
-            # Φ̃ += _SLS_𝓗₂_ECQP(cⱼ, P̃, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ, P.Nx, P.Nu)
-            problem = Model(SCS.Optimizer); set_silent(problem)
+            Φ̃ += _SLS_𝓗₂_ECQP(cⱼ, Ĩ, P̃, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ, P.Nx, P.Nu)
         else
+            # Retrieves the reduced-order state-space matrices
+            Ã,B̃₁,B̃₂, C̃₁,D̃₁₁,D̃₁₂, C̃₂,D̃₂₁,D̃₂₂  = P̃;
+            B̃₁ = isempty(B̃₁) ? B̃₁ : B̃₁[iiₓ,:];
+            D̃₂₁ = isempty(D̃₂₁) ? D̃₂₁ : D̃₂₁[iiₓ,:];
+
+            # Designs and solves the OCP associated with subsystem P̃
             problem = Model(Ipopt.Optimizer); set_silent(problem)
+            Φ̃ₓ = [@variable(problem, [1:P̃.Nx,1:P̃.Nw]) for _ in 1:T];
+            Φ̃ᵤ = [@variable(problem, [1:P̃.Nu,1:P̃.Nw]) for _ in 1:T];
+            
+            H_w2z = _create_SLS_ref_operator(problem, [C̃₁ D̃₁₂], Φ̃ₓ, Φ̃ᵤ, [B̃₁; D̃₂₁], D̃₁₁);
+    
+            @objective(problem,      Min,      norm(H_w2z, :𝓗₂) + L⁺([Φ̃ₓ,Φ̃ᵤ],cⱼ)); # <~ L^+ is not parallelized
+            @constraint(problem,                Φ̃ₓ[1]   .== Ĩ);
+            @constraint(problem, [t = 1:(T-1)], Φ̃ₓ[t+1] .== Ã*Φ̃ₓ[t] + B̃₂*Φ̃ᵤ[t]);
+            @constraint(problem,                   0    .== Ã*Φ̃ₓ[T] + B̃₂*Φ̃ᵤ[T]);
+    
+            for t in 1:T
+                fix.(Φ̃ₓ[t][𝓢ₓ[t][sₓ,cⱼ] .≠ 1], 0.0, force=true);
+                fix.(Φ̃ᵤ[t][𝓢ᵤ[t][sᵤ,cⱼ] .≠ 1], 0.0, force=true);
+            end
+            
+            optimize!(problem)
+    
+            # TODO: Verify dimensions
+            Φₓ = [sparse(vec(repeat(sₓ,P̃.Nw,1)'), vec(repeat(cⱼ,1,P̃.Nx)'), vec(value.(Φ̃ₓ[t]).*𝓢ₓ[t][sₓ,cⱼ]), P.Nx, P.Nx) for t in 1:T];
+            Φᵤ = [sparse(vec(repeat(sᵤ,P̃.Nw,1)'), vec(repeat(cⱼ,1,P̃.Nu)'), vec(value.(Φ̃ᵤ[t]).*𝓢ᵤ[t][sᵤ,cⱼ]), P.Nu, P.Nx) for t in 1:T];
+            Φ̃ += [Φₓ Φᵤ];
         end
-        Φ̃ₓ = [@variable(problem, [1:P̃.Nx,1:P̃.Nw]) for _ in 1:T];
-        Φ̃ᵤ = [@variable(problem, [1:P̃.Nu,1:P̃.Nw]) for _ in 1:T];
-        
-        H_w2z = _create_SLS_ref_operator(problem, [C̃₁ D̃₁₂], Φ̃ₓ, Φ̃ᵤ, [B̃₁; D̃₂₁], D̃₁₁);
-
-        @objective(problem,      Min,      norm(H_w2z, :𝓗₂) + L⁺([Φ̃ₓ,Φ̃ᵤ],cⱼ)); # <~ L^+ is not parallelized
-        @constraint(problem,                Φ̃ₓ[1]   .== Ĩ);
-        @constraint(problem, [t = 1:(T-1)], Φ̃ₓ[t+1] .== Ã*Φ̃ₓ[t] + B̃₂*Φ̃ᵤ[t]);
-        @constraint(problem,                   0    .== Ã*Φ̃ₓ[T] + B̃₂*Φ̃ᵤ[T]);
-
-        for t in 1:T
-            fix.(Φ̃ₓ[t][𝓢ₓ[t][sₓ,cⱼ] .≠ 1], 0.0, force=true);
-            fix.(Φ̃ᵤ[t][𝓢ᵤ[t][sᵤ,cⱼ] .≠ 1], 0.0, force=true);
-        end
-        
-        optimize!(problem)
-
-        # TODO: Verify dimensions
-        Φₓ = [sparse(vec(repeat(sₓ,P̃.Nw,1)'), vec(repeat(cⱼ,1,P̃.Nx)'), vec(value.(Φ̃ₓ[t]).*𝓢ₓ[t][sₓ,cⱼ]), P.Nx, P.Nx) for t in 1:T];
-        Φᵤ = [sparse(vec(repeat(sᵤ,P̃.Nw,1)'), vec(repeat(cⱼ,1,P̃.Nu)'), vec(value.(Φ̃ᵤ[t]).*𝓢ᵤ[t][sᵤ,cⱼ]), P.Nu, P.Nx) for t in 1:T];
-        Φ̃ += [Φₓ Φᵤ];
     end
     # ___________________________________________________________________
     return Φ̃
 # --
 end 
 
-function _SLS_𝓗₂_ECQP(cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector, Nx::Int, Nu::Int)
+function _SLS_𝓗₂_ECQP(cⱼ, Ĩ::AbstractMatrix, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector, Nx::Int, Nu::Int)
     ## Creates the Hessian matrix 
-    H = P.B₁[cⱼ].^2 .* blockdiag(kron(I(T), P.C₁'P.C₁), kron(I(T), P.D₁₂'P.D₁₂));
+    H = nonzeros(P.B₁[:]).^2 .* blockdiag(kron(I(T), P.C₁'P.C₁), kron(I(T), P.D₁₂'P.D₁₂));
 
     ## Creates the constraint matrix 
     # Dynamical constraints
@@ -90,14 +89,14 @@ function _SLS_𝓗₂_ECQP(cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢�
     Sₓ_idx = vcat([         (t-1)*P.Nx .+ findall(𝓢ₓ[t][sₓ,cⱼ[1]] .== 0) for t in 2:T]...);
     Sᵤ_idx = vcat([T*P.Nx + (t-1)*P.Nu .+ findall(𝓢ᵤ[t][sᵤ,cⱼ[1]] .== 0) for t in 1:T]...);
     
-    G_sp = spdiagm(0 => ones((P.Nx+P.Nu)*T))[Sᵤ_idx,:];
+    G_sp = spdiagm(0 => ones((P.Nx+P.Nu)*T))[[Sₓ_idx; Sᵤ_idx],:];
 
     # -
     G = [G_dyn; G_sp];
-    g = [I(P.Nx)[:,cⱼ]; zeros(size(G,1)-P.Nx)];
+    g = [Ĩ; zeros(size(G,1)-P.Nx)];
 
     # Solves system of equations 
-    Φ = [H G'; G 0I] \ [zeros(size(H,1)); g];
+    Φ = qr([H G'; G 0I]) \ Array([zeros(size(H,1)); g]);
     
     Φₓ = [sparse(sₓ, repeat(cⱼ,P.Nx), vec(Φ[(1:P.Nx).+(t-1)*P.Nx] .* 𝓢ₓ[t][sₓ,cⱼ]), Nx, Nx) for t in 1:T];
     Φᵤ = [sparse(sᵤ, repeat(cⱼ,P.Nu), vec(Φ[(1:P.Nu).+(t-1)*P.Nu.+T*P.Nx] .* 𝓢ᵤ[t][sᵤ,cⱼ]), Nu, Nx) for t in 1:T];

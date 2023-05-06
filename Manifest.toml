@@ -2,7 +2,7 @@
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "e31c48b01ee85405cada523a0796cbdcfb9f933e"
+project_hash = "1388e8b98a4cc2df661fe5c53055365725c2125f"
 
 [[deps.ASL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -241,12 +241,6 @@ uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 deps = ["Libdl", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
-[[deps.LinearMaps]]
-deps = ["ChainRulesCore", "LinearAlgebra", "SparseArrays", "Statistics"]
-git-tree-sha1 = "4af48c3585177561e9f0d24eb9619ad3abf77cc7"
-uuid = "7a12625a-238d-50fd-b39a-03d52299707e"
-version = "3.10.0"
-
 [[deps.LogExpFunctions]]
 deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
 git-tree-sha1 = "0a1b7c2863e44523180fdb3146534e265a91870b"
@@ -289,12 +283,6 @@ deps = ["BenchmarkTools", "CodecBzip2", "CodecZlib", "DataStructures", "ForwardD
 git-tree-sha1 = "58a367388e1b068104fa421cb34f0e6ee6316a26"
 uuid = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 version = "1.14.1"
-
-[[deps.MatrixEquations]]
-deps = ["LinearAlgebra", "LinearMaps"]
-git-tree-sha1 = "15838905f0d1eb5d450b12986e64861a82fd6e03"
-uuid = "99c1a7ee-ab34-5fd5-8076-27c950a045f4"
-version = "2.2.9"
 
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
