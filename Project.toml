@@ -22,9 +22,9 @@ JuMP = "1"
 julia = "1.8"
 
 [extras]
-ControlSystems = "a6e380b2-a6ca-5380-bf3e-84a91bcd477e"
+MatrixEquations = "99c1a7ee-ab34-5fd5-8076-27c950a045f4"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "SafeTestsets", "ControlSystems"]
+test = ["Test", "SafeTestsets", "MatrixEquations"]

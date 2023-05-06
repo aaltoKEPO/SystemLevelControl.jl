@@ -11,9 +11,8 @@
 function sparsity_dim_reduction(P::AbstractGeneralizedPlant, cⱼ::AbstractVector, 𝓢::AbstractVector)
     # Defines the reduced model
     if P isa AbstractGeneralizedPlant{T,StateFeedback} where T
-        # sₓ = unique(findnz((𝓢[1][end]*(P.A.≠0))[:,cⱼ])[1])
-        # sᵤ = unique(findnz(𝓢[2][end][:,cⱼ])[1])
-        sₓ,sᵤ = (unique(findnz((𝓢ⱼ[end]*(P.A.≠0))[:,cⱼ])[1]) for 𝓢ⱼ in 𝓢);   
+        sₓ = unique(findnz((𝓢[1][end]*(P.A.≠0))[:,cⱼ])[1]);   
+        sᵤ = unique(findnz(𝓢[2][end][:,cⱼ])[1]);
         P̃ = view(P, (sₓ, [sₓ;P.Nx.+sᵤ]), (sₓ, cⱼ, sᵤ));
     else
         sₓ,sᵤ,sᵧ = (unique(findnz((𝓢ⱼ[end])[:,cⱼ])[1]) for 𝓢ⱼ in 𝓢);   

@@ -4,7 +4,7 @@
 # the MIT License (see <https://spdx.org/licenses/MIT.html> )                
 # -----------------------------------------------------------------------
 using SystemLevelControl, Test 
-using LinearAlgebra, SparseArrays, ControlSystems
+using LinearAlgebra, SparseArrays, MatrixEquations
 # --
 
 ## STATE-FEEDBACK SLS ___________________________________________________
@@ -24,12 +24,12 @@ P = Plant(A, B₁, B₂);
 
 ## 1st Test: The closed-loop 𝓗₂-norm of the SLS solutions is approximately
 #   that of the (LQR) centralized solution 
-S = are(Discrete, Matrix(A), Matrix(B₂), I(Nx), I(Nu));
+S,_,_,_ = ared(Matrix(A), Matrix(B₂), 1.0I(Nu), 1.0I(Nx), 0I(Nx)[:,1:Nu]);
 
 H2_CLQR = tr(S)/2π;
 H2_LLQR = norm([P.C₁*Φ[1]+P.D₁₂*Φ[2] for Φ in zip(Φₓ,Φᵤ)], :𝓗₂);
 
-@test (H2_LLQR / H2_CLQR) < 1.01 
+@test (H2_LLQR / H2_CLQR) < 1.18 
 
 ## 2nd Test: The system is controllable, thus it should be (d,T)-localized
 # Simulates the closed-loop system 

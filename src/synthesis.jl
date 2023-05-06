@@ -43,7 +43,12 @@ function _SLS_𝓗₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Ab
         D̃₂₁ = isempty(D̃₂₁) ? D̃₂₁ : D̃₂₁[iiₓ,:];
 
         # Designs and solves the OCP associated with subsystem P̃
-        problem = Model(SCS.Optimizer); set_silent(problem)
+        if length(cⱼ) == 1
+            # Φ̃ += _SLS_𝓗₂_ECQP(cⱼ, P̃, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ, P.Nx, P.Nu)
+            problem = Model(SCS.Optimizer); set_silent(problem)
+        else
+            problem = Model(Ipopt.Optimizer); set_silent(problem)
+        end
         Φ̃ₓ = [@variable(problem, [1:P̃.Nx,1:P̃.Nw]) for _ in 1:T];
         Φ̃ᵤ = [@variable(problem, [1:P̃.Nu,1:P̃.Nw]) for _ in 1:T];
         
@@ -71,6 +76,37 @@ function _SLS_𝓗₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Ab
 # --
 end 
 
+function _SLS_𝓗₂_ECQP(cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector, Nx::Int, Nu::Int)
+    ## Creates the Hessian matrix 
+    H = P.B₁[cⱼ].^2 .* blockdiag(kron(I(T), P.C₁'P.C₁), kron(I(T), P.D₁₂'P.D₁₂));
+
+    ## Creates the constraint matrix 
+    # Dynamical constraints
+    G_dyn_A =  I-kron(spdiagm(-1 => ones(T)), sparse(P.A));
+    G_dyn_B = 0I-kron(spdiagm(-1 => ones(T)), sparse(P.B₂));
+    G_dyn = [G_dyn_A[:,1:(P.Nx*T)]  G_dyn_B[:,1:(P.Nu*T)]];
+    
+    # Sparsity constraints 
+    Sₓ_idx = vcat([         (t-1)*P.Nx .+ findall(𝓢ₓ[t][sₓ,cⱼ[1]] .== 0) for t in 2:T]...);
+    Sᵤ_idx = vcat([T*P.Nx + (t-1)*P.Nu .+ findall(𝓢ᵤ[t][sᵤ,cⱼ[1]] .== 0) for t in 1:T]...);
+    
+    G_sp = spdiagm(0 => ones((P.Nx+P.Nu)*T))[Sᵤ_idx,:];
+
+    # -
+    G = [G_dyn; G_sp];
+    g = [I(P.Nx)[:,cⱼ]; zeros(size(G,1)-P.Nx)];
+
+    # Solves system of equations 
+    Φ = [H G'; G 0I] \ [zeros(size(H,1)); g];
+    
+    Φₓ = [sparse(sₓ, repeat(cⱼ,P.Nx), vec(Φ[(1:P.Nx).+(t-1)*P.Nx] .* 𝓢ₓ[t][sₓ,cⱼ]), Nx, Nx) for t in 1:T];
+    Φᵤ = [sparse(sᵤ, repeat(cⱼ,P.Nu), vec(Φ[(1:P.Nu).+(t-1)*P.Nu.+T*P.Nx] .* 𝓢ᵤ[t][sᵤ,cⱼ]), Nu, Nx) for t in 1:T];
+
+    # ___________________________________________________________________
+    return [Φₓ Φᵤ]
+# --
+end 
+
 
 # OPERATOR OVERLOADS / AUXILIARY FUNCTIONS ______________________________
 function _create_SLS_ref_operator(problem::Model, L::AbstractMatrix, Φ̃ₓ::Vector{Matrix{VariableRef}}, Φ̃ᵤ::Vector{Matrix{VariableRef}}, R::AbstractMatrix, D::AbstractMatrix)
@@ -79,7 +115,7 @@ end
 
 LinearAlgebra.:norm(A::AbstractVector{T}, t::Symbol) where T = begin
     if t === :𝓗₂
-        return sum([tr(Aₜ'Aₜ) for Aₜ in A]) / 2π;
+        return sum([tr(Aₜ'Aₜ) for Aₜ in A]) / (2π);
     else        
         throw(ArgumentError("The argument '$(t)' is not a valid norm type."));
     end
