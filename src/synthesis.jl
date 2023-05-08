@@ -77,7 +77,7 @@ end
 
 function _SLS_𝓗₂_ECQP(cⱼ, Ĩ::AbstractMatrix, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector, Nx::Int, Nu::Int)
     ## Creates the Hessian matrix 
-    H = nonzeros(P.B₁[:]).^2 .* blockdiag(kron(I(T), P.C₁'P.C₁), kron(I(T), P.D₁₂'P.D₁₂));
+    H = P.B₁[Bool.(Ĩ)][1]^2 * blockdiag(kron(I(T), P.C₁'P.C₁), kron(I(T), P.D₁₂'P.D₁₂));
 
     ## Creates the constraint matrix 
     # Dynamical constraints
@@ -86,10 +86,10 @@ function _SLS_𝓗₂_ECQP(cⱼ, Ĩ::AbstractMatrix, P::AbstractGeneralizedPlan
     G_dyn = [G_dyn_A[:,1:(P.Nx*T)]  G_dyn_B[:,1:(P.Nu*T)]];
     
     # Sparsity constraints 
-    Sₓ_idx = vcat([         (t-1)*P.Nx .+ findall(𝓢ₓ[t][sₓ,cⱼ[1]] .== 0) for t in 2:T]...);
-    Sᵤ_idx = vcat([T*P.Nx + (t-1)*P.Nu .+ findall(𝓢ᵤ[t][sᵤ,cⱼ[1]] .== 0) for t in 1:T]...);
-    
-    G_sp = spdiagm(0 => ones((P.Nx+P.Nu)*T))[[Sₓ_idx; Sᵤ_idx],:];
+    S_idx = [vcat([         (t-1)*P.Nx .+ findall(iszero, 𝓢ₓ[t][sₓ,cⱼ[1]]) for t in 2:T]...);
+             vcat([T*P.Nx + (t-1)*P.Nu .+ findall(iszero, 𝓢ᵤ[t][sᵤ,cⱼ[1]]) for t in 1:T]...)]
+
+    G_sp = sparse(1:length(S_idx), S_idx, ones(length(S_idx)), length(S_idx), (P.Nx+P.Nu)*T); 
 
     # -
     G = [G_dyn; G_sp];
@@ -98,8 +98,8 @@ function _SLS_𝓗₂_ECQP(cⱼ, Ĩ::AbstractMatrix, P::AbstractGeneralizedPlan
     # Solves system of equations 
     Φ = qr([H G'; G 0I]) \ Array([zeros(size(H,1)); g]);
     
-    Φₓ = [sparse(sₓ, repeat(cⱼ,P.Nx), vec(Φ[(1:P.Nx).+(t-1)*P.Nx] .* 𝓢ₓ[t][sₓ,cⱼ]), Nx, Nx) for t in 1:T];
-    Φᵤ = [sparse(sᵤ, repeat(cⱼ,P.Nu), vec(Φ[(1:P.Nu).+(t-1)*P.Nu.+T*P.Nx] .* 𝓢ᵤ[t][sᵤ,cⱼ]), Nu, Nx) for t in 1:T];
+    Φₓ = [sparse(sₓ, repeat(cⱼ,P.Nx), Φ[(1:P.Nx).+(t-1)*P.Nx], Nx, Nx) for t in 1:T];
+    Φᵤ = [sparse(sᵤ, repeat(cⱼ,P.Nu), Φ[(1:P.Nu).+(t-1)*P.Nu.+T*P.Nx], Nu, Nx) for t in 1:T];
 
     # ___________________________________________________________________
     return [Φₓ Φᵤ]
