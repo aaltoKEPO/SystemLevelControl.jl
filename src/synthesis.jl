@@ -21,10 +21,9 @@ function SLS(P::AbstractGeneralizedPlant, S::AbstractVector; 𝓘=nothing, norm=
         L⁺(Φ,j) = 0;
 
         let P=P, T=T, Sₓ=Sₓ, Sᵤ=Sᵤ, L⁺=L⁺
-            Φ = @distributed (+) for Cⱼ in collect(𝓒)
+            return @distributed (+) for Cⱼ in collect(𝓒)
                 _SLS_H₂(Cⱼ, P, T, Sₓ, Sᵤ, L⁺)
             end
-            return eachcol(Φ)
         end
 
     end
@@ -33,12 +32,12 @@ end
 
 function _SLS_H₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, L⁺::Function)
     # Optimization loop _________________________________________________
-    Φ̃ = [[spzeros(P.Nx,P.Nx) for _ in 1:T] [spzeros(P.Nu,P.Nx) for _ in 1:T]];      # SLS Mappings
+    Φ̃ = [[spzeros(P.Nx,P.Nx) for _ in 1:T], [spzeros(P.Nu,P.Nx) for _ in 1:T]];      # SLS Mappings
     for cⱼ in Cⱼ
         (P̃,Ĩ,iiₓ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, [𝓢ₓ,𝓢ᵤ]);   #  Obtains a reduced-order system based on the sparsity in 𝓢
 
         if length(cⱼ) == 1
-            Φ̃ += _SLS_H₂_ECQP(cⱼ, Ĩ, P̃, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ)
+             _SLS_H₂_ECQP!(Φ̃, cⱼ, Ĩ, P̃, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ)
         else
             # Retrieves the reduced-order state-space matrices
             Ã,B̃₁,B̃₂, C̃₁,D̃₁₁,D̃₁₂, C̃₂,D̃₂₁,D̃₂₂  = P̃;
@@ -65,9 +64,10 @@ function _SLS_H₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Abstr
             optimize!(problem)
     
             # TODO: Verify dimensions
-            Φₓ = [sparse(vec(repeat(sₓ,P̃.Nw,1)'), vec(repeat(cⱼ,1,P̃.Nx)'), vec(value.(Φ̃ₓ[t]).*𝓢ₓ[t][sₓ,cⱼ]), P.Nx, P.Nx) for t in 1:T];
-            Φᵤ = [sparse(vec(repeat(sᵤ,P̃.Nw,1)'), vec(repeat(cⱼ,1,P̃.Nu)'), vec(value.(Φ̃ᵤ[t]).*𝓢ᵤ[t][sᵤ,cⱼ]), P.Nu, P.Nx) for t in 1:T];
-            Φ̃ += [Φₓ Φᵤ];
+            for t in 1:T 
+                Φ̃[1][t][sₓ,cⱼ] = value.(Φ̃ₓ[t]) .* 𝓢ₓ[t][sₓ,cⱼ];
+                Φ̃[2][t][sᵤ,cⱼ] = value.(Φ̃ᵤ[t]) .* 𝓢ᵤ[t][sᵤ,cⱼ];
+            end
         end
     end
     # ___________________________________________________________________
@@ -75,14 +75,14 @@ function _SLS_H₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Abstr
 # --
 end 
 
-function _SLS_H₂_ECQP(cⱼ, Ĩ::AbstractMatrix, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector)
+function _SLS_H₂_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, Ĩ::AbstractMatrix, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector)
     ## Creates the Hessian matrix 
     H = P.B₁[Bool.(Ĩ)][1]^2 * blockdiag(kron(I(T), P.C₁'P.C₁), kron(I(T), P.D₁₂'P.D₁₂));
 
     ## Creates the constraint matrix 
     # Dynamical constraints
-    G_dyn_A =  I-kron(spdiagm(-1 => ones(T)), sparse(P.A));
-    G_dyn_B = 0I-kron(spdiagm(-1 => ones(T)), sparse(P.B₂));
+    G_dyn_A =  I - kron(spdiagm(-1 => ones(T)), sparse(P.A));
+    G_dyn_B = 0I - kron(spdiagm(-1 => ones(T)), sparse(P.B₂));
     G_dyn = [G_dyn_A[:,1:(P.Nx*T)]  G_dyn_B[:,1:(P.Nu*T)]];
     
     # Sparsity constraints 
@@ -98,11 +98,10 @@ function _SLS_H₂_ECQP(cⱼ, Ĩ::AbstractMatrix, P::AbstractGeneralizedPlant, 
     # Solves system of equations 
     Φ = qr([H G'; G 0I]) \ Array([zeros(size(H,1)); g]);
     
-    Φₓ = [sparse(sₓ, repeat(cⱼ,P.Nx), Φ[(1:P.Nx).+(t-1)*P.Nx], size(𝓢ₓ,1), size(𝓢ₓ,2)) for t in 1:T];
-    Φᵤ = [sparse(sᵤ, repeat(cⱼ,P.Nu), Φ[(1:P.Nu).+(t-1)*P.Nu.+T*P.Nx], size(𝓢ᵤ,1), size(𝓢ᵤ,2)) for t in 1:T];
-
-    # ___________________________________________________________________
-    return [Φₓ Φᵤ]
+    for t in 1:T 
+        Φ̃[1][t][sₓ,cⱼ] .= Φ[(1:P.Nx).+(t-1)*P.Nx];
+        Φ̃[2][t][sᵤ,cⱼ] .= Φ[(1:P.Nu).+(t-1)*P.Nu.+T*P.Nx];
+    end
 # --
 end 
 

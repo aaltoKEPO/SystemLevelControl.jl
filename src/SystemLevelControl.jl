@@ -16,7 +16,7 @@ export # Plant and controller types
        GeneralizedSubPlant, 
        Plant,
        # Synthesis methods
-       SLS_𝓗₂,
+       SLS,
        # Dimensionality reduction methods
        sparsity_dim_reduction,
        # Utils and auxiliary functions

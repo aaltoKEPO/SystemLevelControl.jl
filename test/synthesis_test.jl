@@ -20,7 +20,7 @@ P = Plant(A, B₁, B₂);
 𝓢ₓ = [           (A .≠ 0)^min(d,  floor(α*(t-1))) .≠ 0 for t = 1:T];
 𝓢ᵤ = [(B₂' .≠ 0)*(A .≠ 0)^min(d+1,floor(α*(t-1))) .≠ 0 for t = 1:T];
 
-Φₓ,Φᵤ = SLS_𝓗₂(P, [𝓢ₓ,𝓢ᵤ]);
+Φₓ,Φᵤ = SLS(P, [𝓢ₓ,𝓢ᵤ]);
 
 ## 1st Test: The closed-loop 𝓗₂-norm of the SLS solutions is approximately
 #   that of the (LQR) centralized solution 
@@ -50,8 +50,8 @@ end
 
 ## 3rd Test: Check if dimensionality reduction is working as intended,
 #   i.e., if the parallel and complete optimizations are equivalent
-Φₓ_2,Φᵤ_2 = SLS_𝓗₂(P, [𝓢ₓ,𝓢ᵤ], 𝓘=[(1+2j):min(2+2j, Nx) for j in 0:(Nx÷2)]);
-Φₓ_T,Φᵤ_T = SLS_𝓗₂(P, [𝓢ₓ,𝓢ᵤ], 𝓘=[1:Nx]);
+Φₓ_2,Φᵤ_2 = SLS(P, [𝓢ₓ,𝓢ᵤ], 𝓘=[(1+2j):min(2+2j, Nx) for j in 0:(Nx÷2)]);
+Φₓ_T,Φᵤ_T = SLS(P, [𝓢ₓ,𝓢ᵤ], 𝓘=[1:Nx]);
 
 for t = 1:T
     @test norm(Φₓ[t] - Φₓ_2[t])^2 < 1.5e-4
