@@ -8,12 +8,12 @@
 
 # FUNCTIONS _____________________________________________________________
 
-function SLS(P::AbstractGeneralizedPlant, S::AbstractVector; 𝓘=nothing, norm=:H2)
+function SLS(P::AbstractGeneralizedPlant, S::AbstractVector; J=nothing, norm=:H2)
     # -- --
     if P isa GeneralizedPlant{T,StateFeedback} where {T}
         # Auxiliary variables
-        𝓘 = (𝓘 === nothing) ? [[i] for i in 1:P.Nx] : 𝓘;
-        𝓒 = Iterators.partition(𝓘, ceil(Int, length(𝓘)/nworkers()));
+        J = (J === nothing) ? [[i] for i in 1:P.Nx] : J;
+        𝓒 = Iterators.partition(J, ceil(Int, length(J)/nworkers()));
         
         # Unpack the internal function arguments
         Sₓ,Sᵤ = S;
