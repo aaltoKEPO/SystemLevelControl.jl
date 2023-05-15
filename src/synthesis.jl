@@ -8,66 +8,76 @@
 
 # FUNCTIONS _____________________________________________________________
 
-function SLS(P::AbstractGeneralizedPlant, S::AbstractVector; J=nothing, norm=:H2)
-    # -- --
-    if P isa GeneralizedPlant{T,StateFeedback} where {T}
-        # Auxiliary variables
-        J = (J === nothing) ? [[i] for i in 1:P.Nx] : J;
-        𝓒 = Iterators.partition(J, ceil(Int, length(J)/nworkers()));
-        
-        # Unpack the internal function arguments
-        Sₓ,Sᵤ = S;
-        T = length(Sₓ)
-        L⁺(Φ,j) = 0;
+"""
+    SLS(P::AbstractGeneralizedPlant, S::AbstractVector)
 
-        let P=P, T=T, Sₓ=Sₓ, Sᵤ=Sᵤ, L⁺=L⁺
-            return @distributed (+) for Cⱼ in collect(𝓒)
-                _SLS_H₂(Cⱼ, P, T, Sₓ, Sᵤ, L⁺)
-            end
-        end
+Synthetise a controller for the plant decribed by `P` according to the spatiotemporal
+localization constraints encoded by `S`. Currently (v0), only supports the design of 
+Localized \$\\mathcal{H}_2\$ state/output-feedback controllers.
 
+# Examples 
+```julia-repl
+julia> 
+```
+"""
+function SLS(P::AbstractGeneralizedPlant, S::AbstractVector; J=[nothing], norm=:H2)
+    if norm == :H2
+        return SLS_H2(P, S, J);
+    else        
+        throw(ArgumentError("Incorrent norm argument. Currently, the synthesis is implemented for norms: {:H2}"));
     end
-# --
-end 
+end # -- End of SLS
 
-function _SLS_H₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, L⁺::Function)
+# _______________________________________________________________________
+# INTERNAL FUNCTIONS ____________________________________________________
+
+function SLS_H2(P::GeneralizedPlant{<:Number,Ts}, S::AbstractVector, J::AbstractVector) where {Ts<:StateFeedback}
+    # Auxiliary variables
+    J = (J[1] === nothing) ? [[i] for i in 1:P.Nx] : J;
+    𝓒 = Iterators.partition(J, ceil(Int, length(J)/nworkers()));
+    
+    # Unpack the internal function arguments
+    Sₓ,Sᵤ = S;
+    T = length(Sₓ)
+    L⁺(Φ,j) = 0;
+
+    let P=P, T=T, Sₓ=Sₓ, Sᵤ=Sᵤ, L⁺=L⁺
+    return @distributed (+) for Cⱼ in collect(𝓒)
+        _SLS_H2(Cⱼ, P, T, Sₓ, Sᵤ, L⁺)
+    end
+    end
+end # -- End of SLS_H2 / StateFeedback
+
+function SLS_H2(P::GeneralizedPlant{<:Number,Ts}, S::AbstractVector, J::AbstractVector) where {Ts<:OutputFeedback}
+    # Auxiliary variables
+    J = (J === nothing) ? [[i] for i in 1:(P.Nx+P.Ny)] : J;
+    𝓒 = Iterators.partition(J, ceil(Int, length(J)/nworkers()));
+    
+    # Unpack the internal function arguments
+    Sₓₓ,Sᵤₓ,Sₓᵧ,Sᵤᵧ = S;
+    T = length(Sₓₓ)
+
+    let P=P, T=T, Sₓₓ=Sₓₓ, Sᵤₓ=Sᵤₓ
+        # ADMM
+    end
+end # -- End of SLS_H2 / OutputFeedback
+
+
+function _SLS_H2(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, L⁺::Function)
+    # Allocates the SLS mappings
+    Φ̃ = [[spzeros(P.Nx,P.Nx) for _ in 1:T], [spzeros(P.Nu,P.Nx) for _ in 1:T]];      
+    
     # Optimization loop _________________________________________________
-    Φ̃ = [[spzeros(P.Nx,P.Nx) for _ in 1:T], [spzeros(P.Nu,P.Nx) for _ in 1:T]];      # SLS Mappings
     for cⱼ in Cⱼ
-        (P̃,Ĩ,iiₓ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, [𝓢ₓ,𝓢ᵤ]);   #  Obtains a reduced-order system based on the sparsity in 𝓢
+        #  Obtains a reduced-order system based on the sparsity in 𝓢
+        (P̃,Ĩ,iiₓ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, [𝓢ₓ,𝓢ᵤ]);   
 
+        # Solves the reduced-order SLS problem either by solving the KKT system (ECQP)
+        #  or by shipping the optimization directly to the general solver (JuMP-based)
         if length(cⱼ) == 1
-             _SLS_H₂_ECQP!(Φ̃, cⱼ, Ĩ, P̃, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ)
+            _SLS_H2_ECQP!(Φ̃, cⱼ, P̃, Ĩ, iiₓ, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ)
         else
-            # Retrieves the reduced-order state-space matrices
-            Ã,B̃₁,B̃₂, C̃₁,D̃₁₁,D̃₁₂, C̃₂,D̃₂₁,D̃₂₂  = P̃;
-            B̃₁ = isempty(B̃₁) ? B̃₁ : B̃₁[iiₓ,:];
-            D̃₂₁ = isempty(D̃₂₁) ? D̃₂₁ : D̃₂₁[iiₓ,:];
-
-            # Designs and solves the OCP associated with subsystem P̃
-            problem = Model(Ipopt.Optimizer); set_silent(problem)
-            Φ̃ₓ = [@variable(problem, [1:P̃.Nx,1:P̃.Nw]) for _ in 1:T];
-            Φ̃ᵤ = [@variable(problem, [1:P̃.Nu,1:P̃.Nw]) for _ in 1:T];
-            
-            H_w2z = _create_SLS_ref_operator(problem, [C̃₁ D̃₁₂], Φ̃ₓ, Φ̃ᵤ, [B̃₁; D̃₂₁], D̃₁₁);
-    
-            @objective(problem,      Min,      norm(H_w2z, :𝓗₂) + L⁺([Φ̃ₓ,Φ̃ᵤ],cⱼ)); # <~ L^+ is not parallelized
-            @constraint(problem,                Φ̃ₓ[1]   .== Ĩ);
-            @constraint(problem, [t = 1:(T-1)], Φ̃ₓ[t+1] .== Ã*Φ̃ₓ[t] + B̃₂*Φ̃ᵤ[t]);
-            @constraint(problem,                   0    .== Ã*Φ̃ₓ[T] + B̃₂*Φ̃ᵤ[T]);
-    
-            for t in 1:T
-                fix.(Φ̃ₓ[t][𝓢ₓ[t][sₓ,cⱼ] .≠ 1], 0.0, force=true);
-                fix.(Φ̃ᵤ[t][𝓢ᵤ[t][sᵤ,cⱼ] .≠ 1], 0.0, force=true);
-            end
-            
-            optimize!(problem)
-    
-            # TODO: Verify dimensions
-            for t in 1:T 
-                Φ̃[1][t][sₓ,cⱼ] = value.(Φ̃ₓ[t]) .* 𝓢ₓ[t][sₓ,cⱼ];
-                Φ̃[2][t][sᵤ,cⱼ] = value.(Φ̃ᵤ[t]) .* 𝓢ᵤ[t][sᵤ,cⱼ];
-            end
+            _SLS_H2_General!(Φ̃, cⱼ, P̃, Ĩ, iiₓ, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ)
         end
     end
     # ___________________________________________________________________
@@ -75,9 +85,9 @@ function _SLS_H₂(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Abstr
 # --
 end 
 
-function _SLS_H₂_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, Ĩ::AbstractMatrix, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector)
+function _SLS_H2_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGeneralizedPlant, Ĩ::AbstractMatrix, iiₓ::BitArray,  T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector)
     ## Creates the Hessian matrix 
-    H = P.B₁[Bool.(Ĩ)][1]^2 * blockdiag(kron(I(T), P.C₁'P.C₁), kron(I(T), P.D₁₂'P.D₁₂));
+    H = P.B₁[iiₓ][1]^2 * blockdiag(kron(I(T), P.C₁'P.C₁), kron(I(T), P.D₁₂'P.D₁₂));
 
     ## Creates the constraint matrix 
     # Dynamical constraints
@@ -105,7 +115,38 @@ function _SLS_H₂_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, Ĩ::Abstra
 # --
 end 
 
+function _SLS_H2_General!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGeneralizedPlant, Ĩ::AbstractMatrix, iiₓ::BitArray, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector)
+    # Retrieves the reduced-order state-space matrices
+    A,B₁,B₂, C₁,D₁₁,D₁₂, C₂,D₂₁,D₂₂  = P;
+    B₁ = isempty(B₁) ? B₁ : B₁[iiₓ,:];
+    D₂₁ = isempty(D₂₁) ? D₂₁ : D₂₁[iiₓ,:];
 
+    # Designs and solves the OCP associated with subsystem P̃
+    problem = Model(Ipopt.Optimizer); set_silent(problem)
+    Φₓ = [@variable(problem, [1:P.Nx,1:P.Nw]) for _ in 1:T];
+    Φᵤ = [@variable(problem, [1:P.Nu,1:P.Nw]) for _ in 1:T];
+    
+    T_zw = _create_SLS_ref_operator(problem, [C₁ D₁₂], Φₓ, Φᵤ, [B₁; D₂₁], D₁₁);
+
+    @objective(problem,      Min,      norm(T_zw, :𝓗₂));
+    @constraint(problem,                Φₓ[1]   .== Ĩ);
+    @constraint(problem, [t = 1:(T-1)], Φₓ[t+1] .== A*Φₓ[t] + B₂*Φᵤ[t]);
+    @constraint(problem,                   0    .== A*Φₓ[T] + B₂*Φᵤ[T]);
+
+    for t in 1:T
+        fix.(Φₓ[t][𝓢ₓ[t][sₓ,cⱼ] .≠ 1], 0.0, force=true);
+        fix.(Φᵤ[t][𝓢ᵤ[t][sᵤ,cⱼ] .≠ 1], 0.0, force=true);
+    end
+    
+    optimize!(problem)
+
+    for t in 1:T 
+        Φ̃[1][t][sₓ,cⱼ] = value.(Φₓ[t]) .* 𝓢ₓ[t][sₓ,cⱼ];
+        Φ̃[2][t][sᵤ,cⱼ] = value.(Φᵤ[t]) .* 𝓢ᵤ[t][sᵤ,cⱼ];
+    end
+end
+
+# _______________________________________________________________________
 # OPERATOR OVERLOADS / AUXILIARY FUNCTIONS ______________________________
 function _create_SLS_ref_operator(problem::Model, L::AbstractMatrix, Φ̃ₓ::Vector{Matrix{VariableRef}}, Φ̃ᵤ::Vector{Matrix{VariableRef}}, R::AbstractMatrix, D::AbstractMatrix)
     return [@expression(problem, L*[Φ[1];Φ[2]]*R + D) for Φ in zip(Φ̃ₓ,Φ̃ᵤ)]

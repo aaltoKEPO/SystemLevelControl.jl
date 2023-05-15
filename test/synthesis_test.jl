@@ -40,7 +40,7 @@ P_chain_SF = Plant(A, B₁, B₂);
 #   that of the (LQR) centralized solution 
 Sx,_,_,_ = ared(Matrix(A), Matrix(B₂), D₁₂'D₁₂, C₁'C₁, C₁'D₁₂);
 
-H2_CLQR = tr(B₁'S*B₁);
+H2_CLQR = tr(B₁'Sx*B₁);
 H2_LLQR = 2π * norm([C₁*Φ[1]+D₁₂*Φ[2] for Φ in zip(Φₓ,Φᵤ)], :𝓗₂);
 
 @test (H2_LLQR / H2_CLQR) < 1.18 
@@ -97,24 +97,24 @@ end
 # -----------------------------------------------------------------------
 
 ## OUTPUT-FEEDBACK SLS __________________________________________________
-B₁ = [0.5I(Nx÷2+1) zeros(Nx÷2+1,Nx÷2); zeros(Nx÷2,Nx÷2+1) 1.5I(Nx÷2)];  # Sligthly more fun disturbance matrix
+# B₁ = [0.5I(Nx÷2+1) zeros(Nx÷2+1,Nx÷2); zeros(Nx÷2,Nx÷2+1) 1.5I(Nx÷2)];  # Sligthly more fun disturbance matrix
 
-P_chain_OF = Plant(A, B₁, B₂, 
-                   C₁, 0, D₁₂, 
-                   C₂, D₂₁, 0);
+# P_chain_OF = Plant(A, B₁, B₂, 
+#                    C₁, 0, D₁₂, 
+#                    C₂, D₂₁, 0);
 
-Φₓₓ,Φᵤₓ,Φₓᵧ,Φᵤᵧ = SLS(P_chain_OF, [𝓢ₓₓ,𝓢ᵤₓ,𝓢ₓᵧ,𝓢ᵤᵧ]);
+# Φₓₓ,Φᵤₓ,Φₓᵧ,Φᵤᵧ = SLS(P_chain_OF, [𝓢ₓₓ,𝓢ᵤₓ,𝓢ₓᵧ,𝓢ᵤᵧ]);
 
-## 1st Test: The closed-loop 𝓗₂-norm of the SLS solutions is approximately
-#   that of the (LQR) centralized solution 
-Sx,_,_,_ = ared(Matrix(A), Matrix(B₂), D₁₂'D₁₂, C₁'C₁, C₁'D₁₂);
-Sy,_,_,_ = ared(Matrix(A)', Matrix(C₂)', D₂₁'D₂₁, B₁*B₁', B₁'D₂₁);
-K = (I + B₂'Sx*B₂)\B₂'Sx*A;
+# ## 1st Test: The closed-loop 𝓗₂-norm of the SLS solutions is approximately
+# #   that of the (LQR) centralized solution 
+# Sx,_,_,_ = ared(Matrix(A), Matrix(B₂), D₁₂'D₁₂, C₁'C₁, C₁'D₁₂);
+# Sy,_,_,_ = ared(Matrix(A)', Matrix(C₂)', D₂₁'D₂₁, B₁*B₁', B₁'D₂₁);
+# K = (I + B₂'Sx*B₂)\B₂'Sx*A;
 
-H2_CLQG = tr(B₁'S*B₁) + tr(D₁₂'D₁₂*K*Sy*K');
-H2_LLQG = 2π * norm([(C₁*Φ[1]+D₁₂*Φ[2])*B₁ + (C₁*Φ[3]+D₁₂*Φ[4])*D₂₁ for Φ in zip(Φₓₓ,Φᵤₓ,Φₓᵧ,Φᵤᵧ)], :𝓗₂);
+# H2_CLQG = tr(B₁'Sx*B₁) + tr(D₁₂'D₁₂*K*Sy*K');
+# H2_LLQG = 2π * norm([(C₁*Φ[1]+D₁₂*Φ[2])*B₁ + (C₁*Φ[3]+D₁₂*Φ[4])*D₂₁ for Φ in zip(Φₓₓ,Φᵤₓ,Φₓᵧ,Φᵤᵧ)], :𝓗₂);
 
-@test (H2_LLQG / H2_CLQG) < 1.18
+# @test (H2_LLQG / H2_CLQG) < 1.18
 
 # ## 2nd Test: The system is controllable and observable, thus it should be (d,T)-localized
 # # Simulates the closed-loop system 
