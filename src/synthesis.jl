@@ -32,30 +32,49 @@ end # -- End of SLS
 # INTERNAL FUNCTIONS ____________________________________________________
 
 function SLS_H2(P::GeneralizedPlant{<:Number,Ts}, S::AbstractVector, J::AbstractVector) where {Ts<:StateFeedback}
-    # Auxiliary variables
-    J = (J[1] === nothing) ? [[i] for i in 1:P.Nx] : J;
-    𝓒 = Iterators.partition(J, ceil(Int, length(J)/nworkers()));
-    
     # Unpack the internal function arguments
     Sₓ,Sᵤ = S;
     T = length(Sₓ)
     L⁺(Φ,j) = 0;
 
+    # Auxiliary variables
+    J = (J[1] === nothing) ? [[i] for i in 1:P.Nx] : J;
+    𝓒 = Iterators.partition(J, ceil(Int, length(J)/nworkers()));
+
     let P=P, T=T, Sₓ=Sₓ, Sᵤ=Sᵤ, L⁺=L⁺
     return @distributed (+) for Cⱼ in collect(𝓒)
-        _SLS_H2(Cⱼ, P, T, Sₓ, Sᵤ, L⁺)
+        _SLS_H2(Cⱼ, P, T, Sₓ, Sᵤ, [nothing], 0)
     end
     end
 end # -- End of SLS_H2 / StateFeedback
 
 function SLS_H2(P::GeneralizedPlant{<:Number,Ts}, S::AbstractVector, J::AbstractVector) where {Ts<:OutputFeedback}
-    # Auxiliary variables
-    J = (J === nothing) ? [[i] for i in 1:(P.Nx+P.Ny)] : J;
-    𝓒 = Iterators.partition(J, ceil(Int, length(J)/nworkers()));
-    
     # Unpack the internal function arguments
     Sₓₓ,Sᵤₓ,Sₓᵧ,Sᵤᵧ = S;
     T = length(Sₓₓ)
+
+    # Auxiliary variables
+    J = (J !== nothing) ? J : [[i] for i in 1:(P.Nx+P.Ny)];
+    𝓒 = Iterators.partition(J, ceil(Int, length(J)/nworkers()));
+
+    Sₓ,Sᵤ = (hcat.(Sₓₓ,Sₓᵧ), hcat.(Sᵤₓ,Sᵤᵧ));
+    Sₓ_a,Sᵤ_a = (hcat.(Sₓₓ',Sᵤₓ'), hcat.(Sₓᵧ',Sᵤᵧ'));
+
+    ρ = 0.5;
+    
+    Λ = [[spzeros(P.Nx,P.Nx+P.Ny) for _ in 1:T], [spzeros(P.Nu,P.Nx+P.Ny) for _ in 1:T]];
+    Ψ = vec(Λ');
+
+    Φ = @distributed (+) for Cⱼ in collect(𝓒)
+        _SLS_H2(Cⱼ, P, T, Sₓ, Sᵤ, (vec(Ψ') - Λ), ρ)
+    end
+
+    Ψ = @distributed (+) for Cⱼ in collect(𝓒)
+        _SLS_H2(Cⱼ, P', T, Sₓ_a, Sᵤ_a, vec(Φ' - Λ'), ρ)
+    end
+
+    Λ = Λ + (Φ - Ψ)
+
 
     let P=P, T=T, Sₓₓ=Sₓₓ, Sᵤₓ=Sᵤₓ
         # ADMM
@@ -63,21 +82,28 @@ function SLS_H2(P::GeneralizedPlant{<:Number,Ts}, S::AbstractVector, J::Abstract
 end # -- End of SLS_H2 / OutputFeedback
 
 
-function _SLS_H2(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, L⁺::Function)
+function _SLS_H2(Cⱼ::AbstractVector, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, ν::AbstractVector, ρ::Real)
     # Allocates the SLS mappings
-    Φ̃ = [[spzeros(P.Nx,P.Nx) for _ in 1:T], [spzeros(P.Nu,P.Nx) for _ in 1:T]];      
+    Φ̃ = [[spzeros(P.Nx,P.Nx) for _ in 1:T], [spzeros(P.Nu,P.Nx) for _ in 1:T]];
     
     # Optimization loop _________________________________________________
     for cⱼ in Cⱼ
-        #  Obtains a reduced-order system based on the sparsity in 𝓢
-        (P̃,Ĩ,iiₓ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, [𝓢ₓ,𝓢ᵤ]);   
+        # Obtains a reduced-order system based on the sparsity in 𝓢
+        (P̃,Ĩ,iiₓ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, [𝓢ₓ,𝓢ᵤ]);  
+        
+        # Slices the ADMM constant term (if needed)
+        if ν[1] === nothing
+            ν̃ = [[spzeros(P̃.Nx,P̃.Nw) for _ in 1:T], [spzeros(P̃.Nu,P̃.Nw) for _ in 1:T]];
+        else
+            ν̃ = [[ν[1][t][sₓ,cⱼ] for t in 1:T], [ν[2][t][sᵤ,cⱼ] for t in 1:T]];
+        end
 
         # Solves the reduced-order SLS problem either by solving the KKT system (ECQP)
         #  or by shipping the optimization directly to the general solver (JuMP-based)
         if length(cⱼ) == 1
-            _SLS_H2_ECQP!(Φ̃, cⱼ, P̃, Ĩ, iiₓ, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ)
+            _SLS_H2_ECQP!(Φ̃, cⱼ, P̃, Ĩ, iiₓ, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ, ν̃, ρ)
         else
-            _SLS_H2_General!(Φ̃, cⱼ, P̃, Ĩ, iiₓ, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ)
+            _SLS_H2_General!(Φ̃, cⱼ, P̃, Ĩ, iiₓ, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ, ν̃, ρ)
         end
     end
     # ___________________________________________________________________
@@ -85,9 +111,15 @@ function _SLS_H2(Cⱼ, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::Abstrac
 # --
 end 
 
-function _SLS_H2_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGeneralizedPlant, Ĩ::AbstractMatrix, iiₓ::BitArray,  T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector)
+function _SLS_H2_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGeneralizedPlant, Ĩ::AbstractMatrix, iiₓ::BitArray,  T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector, ν::AbstractVector, ρ::Real)
     ## Creates the Hessian matrix 
-    H = P.B₁[iiₓ][1]^2 * blockdiag(kron(I(T), P.C₁'P.C₁), kron(I(T), P.D₁₂'P.D₁₂));
+    σw = isempty(P.B₁) ? 1.0 : P.B₁[iiₓ][1]^2
+    σy = isempty(P.D₂₁) ? 1.0 : P.D₂₁[iiₓ][1]^2
+
+    H = blockdiag(kron(I(T), σw * P.C₁'P.C₁), kron(I(T), σy * P.D₁₂'P.D₁₂));
+
+    # Unpacks the ADMM constant term (or creates a vector of zeros, if state-feedback)
+    ν = vec([vcat(ν[1]...); vcat(ν[2]...)]);
 
     ## Creates the constraint matrix 
     # Dynamical constraints
@@ -106,7 +138,7 @@ function _SLS_H2_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGe
     g = [Ĩ; zeros(size(G,1)-P.Nx)];
 
     # Solves system of equations 
-    Φ = qr([H G'; G 0I]) \ Array([zeros(size(H,1)); g]);
+    Φ = qr([H+ρ*I G'; G 0I]) \ Array([ρ*ν; g]);
     
     for t in 1:T 
         Φ̃[1][t][sₓ,cⱼ] .= Φ[(1:P.Nx).+(t-1)*P.Nx];
@@ -115,7 +147,7 @@ function _SLS_H2_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGe
 # --
 end 
 
-function _SLS_H2_General!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGeneralizedPlant, Ĩ::AbstractMatrix, iiₓ::BitArray, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector)
+function _SLS_H2_General!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGeneralizedPlant, Ĩ::AbstractMatrix, iiₓ::BitArray, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector, ν::AbstractVector, ρ::Real)
     # Retrieves the reduced-order state-space matrices
     A,B₁,B₂, C₁,D₁₁,D₁₂, C₂,D₂₁,D₂₂  = P;
     B₁ = isempty(B₁) ? B₁ : B₁[iiₓ,:];
@@ -128,7 +160,7 @@ function _SLS_H2_General!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::Abstrac
     
     T_zw = _create_SLS_ref_operator(problem, [C₁ D₁₂], Φₓ, Φᵤ, [B₁; D₂₁], D₁₁);
 
-    @objective(problem,      Min,      norm(T_zw, :𝓗₂));
+    @objective(problem,      Min,       norm(T_zw, :𝓗₂) + 0.5ρ*norm([Φₓ,Φᵤ]-ν, :𝓗₂));
     @constraint(problem,                Φₓ[1]   .== Ĩ);
     @constraint(problem, [t = 1:(T-1)], Φₓ[t+1] .== A*Φₓ[t] + B₂*Φᵤ[t]);
     @constraint(problem,                   0    .== A*Φₓ[T] + B₂*Φᵤ[T]);
