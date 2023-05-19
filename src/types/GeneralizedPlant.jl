@@ -90,8 +90,8 @@ function GeneralizedPlant(A::NumberOrAbstractArray,B₁::NumberOrAbstractArray,B
         D₂₂ = fix_feedthrough(to_sparse_matrix(T, D₂₂), size(C₂,1), size(B₂,2))
     else 
         C₂ = SparseMatrixCSC{T,Int}(I, size(A))
-        D₂₁ = SparseMatrixCSC{T,Int}(I, 0, size(B₁,2))
-        D₂₂ = SparseMatrixCSC{T,Int}(I, 0, size(B₂,2))
+        D₂₁ = SparseMatrixCSC{T,Int}(false*I, size(A,1), size(B₁,2))
+        D₂₂ = SparseMatrixCSC{T,Int}(false*I, size(A,1), size(B₂,2))
     end
 
     # Returns the GeneralizedPlant object
@@ -128,7 +128,9 @@ function GeneralizedPlant(Σ::AbstractArray{T}, DIMS::AbstractArray{Int}) where 
     C₁ = Σ[(nx+1):(nx+nz),      1:nx];  D₁₁ = Σ[(nx+1):(nx+nz),      (nx+1):(nx+nw)];  D₁₂ = Σ[(nx+1):(nx+nz),       (nx+nw+1):(nx+nw+nu)];
     C₂ = Σ[(nx+nz+1):(nx+nz+ny),1:nx];  D₂₁ = Σ[(nx+nz+1):(nx+nz+ny),(nx+1):(nx+nw)];  D₂₂ = Σ[(nx+nz+1):(nx+nz+ny), (nx+nw+1):(nx+nw+nu)];
     
-    C₂ = isempty(C₂) ? SparseMatrixCSC{T,Int}(I, size(A)) : C₂;
+    C₂  = !isempty(C₂) ? C₂ : SparseMatrixCSC{T,Int}(I, size(A));
+    D₂₁ = !isempty(D₂₁) ? D₂₁ : SparseMatrixCSC{T,Int}(0I, size(A,1), size(B₁,2));
+    D₂₂ = !isempty(D₂₂) ? D₂₂ : SparseMatrixCSC{T,Int}(0I, size(A,1), size(B₂,2));
 
     GeneralizedPlant{T,Ts}(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
 end
@@ -273,8 +275,8 @@ struct GeneralizedSubPlant{T,Ts} <: AbstractGeneralizedPlant{T,Ts}
         
         if Ts <: StateFeedback
             C₂ = view(P.C₂, I[1], J[1])
-            D₂₁ = view(P.D₂₁, :, J[2])
-            D₂₂ = view(P.D₂₂, :, J[3])
+            D₂₁ = view(P.D₂₁, I[1], J[2])
+            D₂₂ = view(P.D₂₂, I[1], J[3])
         else 
             C₂ = view(P.C₂, I[3], J[1])
             D₂₁ = view(P.D₂₁, I[3], J[2])

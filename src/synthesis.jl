@@ -35,13 +35,12 @@ function SLS_H2(P::GeneralizedPlant{<:Number,Ts}, S::AbstractVector, J::Abstract
     # Unpack the internal function arguments
     Sₓ,Sᵤ = S;
     T = length(Sₓ)
-    L⁺(Φ,j) = 0;
 
     # Auxiliary variables
     J = (J[1] === nothing) ? [[i] for i in 1:P.Nx] : J;
     𝓒 = Iterators.partition(J, ceil(Int, length(J)/nworkers()));
 
-    let P=P, T=T, Sₓ=Sₓ, Sᵤ=Sᵤ, L⁺=L⁺
+    let P=P, T=T, Sₓ=Sₓ, Sᵤ=Sᵤ
     return @distributed (+) for Cⱼ in collect(𝓒)
         _SLS_H2(Cⱼ, P, T, Sₓ, Sᵤ, [nothing], 0)
     end
@@ -54,9 +53,10 @@ function SLS_H2(P::GeneralizedPlant{<:Number,Ts}, S::AbstractVector, J::Abstract
     T = length(Sₓₓ)
 
     # Auxiliary variables
-    J = (J !== nothing) ? J : [[i] for i in 1:(P.Nx+P.Ny)];
+    J = (J[1] !== nothing) ? J : [[i] for i in 1:(P.Nx+P.Ny)];
     𝓒 = Iterators.partition(J, ceil(Int, length(J)/nworkers()));
 
+    # Adjusts the sparsity constraints for the primal and dual problems
     Sₓ,Sᵤ = (hcat.(Sₓₓ,Sₓᵧ), hcat.(Sᵤₓ,Sᵤᵧ));
     Sₓ_a,Sᵤ_a = (hcat.(Sₓₓ',Sᵤₓ'), hcat.(Sₓᵧ',Sᵤᵧ'));
 
@@ -82,14 +82,14 @@ function SLS_H2(P::GeneralizedPlant{<:Number,Ts}, S::AbstractVector, J::Abstract
 end # -- End of SLS_H2 / OutputFeedback
 
 
-function _SLS_H2(Cⱼ::AbstractVector, P::AbstractGeneralizedPlant, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, ν::AbstractVector, ρ::Real)
+function _SLS_H2(Cⱼ::AbstractVector, P::AbstractGeneralizedPlant, T::Integer, Sₓ::AbstractVector, Sᵤ::AbstractVector, ν::AbstractVector, ρ::Real)
     # Allocates the SLS mappings
     Φ̃ = [[spzeros(P.Nx,P.Nx) for _ in 1:T], [spzeros(P.Nu,P.Nx) for _ in 1:T]];
     
     # Optimization loop _________________________________________________
     for cⱼ in Cⱼ
-        # Obtains a reduced-order system based on the sparsity in 𝓢
-        (P̃,Ĩ,iiₓ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, [𝓢ₓ,𝓢ᵤ]);  
+        # Obtains a reduced-order system based on the sparsity in 𝓢 = [Sₓ, Sᵤ]
+        (P̃,Ĩ,iᵣ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, Sₓ[end], Sᵤ[end]);  
         
         # Slices the ADMM constant term (if needed)
         if ν[1] === nothing
@@ -101,9 +101,9 @@ function _SLS_H2(Cⱼ::AbstractVector, P::AbstractGeneralizedPlant, T::Integer, 
         # Solves the reduced-order SLS problem either by solving the KKT system (ECQP)
         #  or by shipping the optimization directly to the general solver (JuMP-based)
         if length(cⱼ) == 1
-            _SLS_H2_ECQP!(Φ̃, cⱼ, P̃, Ĩ, iiₓ, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ, ν̃, ρ)
+            _SLS_H2_ECQP!(Φ̃, cⱼ, P̃, Ĩ, iᵣ, T, Sₓ, Sᵤ, sₓ, sᵤ, ν̃, ρ)
         else
-            _SLS_H2_General!(Φ̃, cⱼ, P̃, Ĩ, iiₓ, T, 𝓢ₓ, 𝓢ᵤ, sₓ, sᵤ, ν̃, ρ)
+            _SLS_H2_General!(Φ̃, cⱼ, P̃, Ĩ, iᵣ, T, Sₓ, Sᵤ, sₓ, sᵤ, ν̃, ρ)
         end
     end
     # ___________________________________________________________________
@@ -111,12 +111,10 @@ function _SLS_H2(Cⱼ::AbstractVector, P::AbstractGeneralizedPlant, T::Integer, 
 # --
 end 
 
-function _SLS_H2_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGeneralizedPlant, Ĩ::AbstractMatrix, iiₓ::BitArray,  T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector, ν::AbstractVector, ρ::Real)
+function _SLS_H2_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGeneralizedPlant, Ĩ::AbstractMatrix, iᵣ::BitArray, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector, ν::AbstractVector, ρ::Real)
     ## Creates the Hessian matrix 
-    σw = isempty(P.B₁) ? 1.0 : P.B₁[iiₓ][1]^2
-    σy = isempty(P.D₂₁) ? 1.0 : P.D₂₁[iiₓ][1]^2
-
-    H = blockdiag(kron(I(T), σw * P.C₁'P.C₁), kron(I(T), σy * P.D₁₂'P.D₁₂));
+    σ = [P.B₁; P.D₂₁][iᵣ][1]
+    H = σ^2 * blockdiag(kron(I(T), P.C₁'P.C₁), kron(I(T), P.D₁₂'P.D₁₂));
 
     # Unpacks the ADMM constant term (or creates a vector of zeros, if state-feedback)
     ν = vec([vcat(ν[1]...); vcat(ν[2]...)]);
@@ -147,18 +145,16 @@ function _SLS_H2_ECQP!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGe
 # --
 end 
 
-function _SLS_H2_General!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGeneralizedPlant, Ĩ::AbstractMatrix, iiₓ::BitArray, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector, ν::AbstractVector, ρ::Real)
+function _SLS_H2_General!(Φ̃::AbstractVector, cⱼ::AbstractVector, P::AbstractGeneralizedPlant, Ĩ::AbstractMatrix, iᵣ::BitArray, T::Integer, 𝓢ₓ::AbstractVector, 𝓢ᵤ::AbstractVector, sₓ::AbstractVector, sᵤ::AbstractVector, ν::AbstractVector, ρ::Real)
     # Retrieves the reduced-order state-space matrices
     A,B₁,B₂, C₁,D₁₁,D₁₂, C₂,D₂₁,D₂₂  = P;
-    B₁ = isempty(B₁) ? B₁ : B₁[iiₓ,:];
-    D₂₁ = isempty(D₂₁) ? D₂₁ : D₂₁[iiₓ,:];
 
     # Designs and solves the OCP associated with subsystem P̃
     problem = Model(Ipopt.Optimizer); set_silent(problem)
     Φₓ = [@variable(problem, [1:P.Nx,1:P.Nw]) for _ in 1:T];
     Φᵤ = [@variable(problem, [1:P.Nu,1:P.Nw]) for _ in 1:T];
     
-    T_zw = _create_SLS_ref_operator(problem, [C₁ D₁₂], Φₓ, Φᵤ, [B₁; D₂₁], D₁₁);
+    T_zw = _create_SLS_ref_operator(problem, [C₁ D₁₂], Φₓ, Φᵤ, [B₁; D₂₁][iᵣ,:], D₁₁);
 
     @objective(problem,      Min,       norm(T_zw, :𝓗₂) + 0.5ρ*norm([Φₓ,Φᵤ]-ν, :𝓗₂));
     @constraint(problem,                Φₓ[1]   .== Ĩ);

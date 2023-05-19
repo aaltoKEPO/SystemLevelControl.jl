@@ -88,8 +88,8 @@ P_large_D0 = Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, 0D₂�
 
 ## State Feedback plants ________________________________________________
 C₂ = SparseMatrixCSC{Float64,Int}(I, Nx, Nx)
-D₂₁ = SparseMatrixCSC{Float64,Int}(I, 0, Nw)
-D₂₂ = SparseMatrixCSC{Float64,Int}(I, 0, Nu)
+D₂₁ = SparseMatrixCSC{Float64,Int}(0I, Nx, Nw)
+D₂₂ = SparseMatrixCSC{Float64,Int}(0I, Nx, Nu)
 
 P_SF = @inferred GeneralizedPlant{Float64,StateFeedback}(A, B₁, B₂, C₁, D₁₁, D₁₂, C₂, D₂₁, D₂₂)
 
@@ -100,12 +100,12 @@ P_SF = @inferred GeneralizedPlant{Float64,StateFeedback}(A, B₁, B₂, C₁, D�
 @test P_SF == Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, I, 0, 0)
 @test P_SF == Plant([A B₁ B₂; C₁ D₁₁ D₁₂], [Nx, Nx+Nu, Nw, Nu])
 
-@test P_SF != Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, I(Nx), spzeros(Nx,Nw), spzeros(Nx,Nu))
+@test P_SF == Plant(A, B₁, B₂, C₁, D₁₁, D₁₂, I(Nx), spzeros(Nx,Nw), spzeros(Nx,Nu))
 
 # Test if output matrices are correct 
 @test P_SF.C₂ == I
-@test isempty(P_SF.D₂₁)
-@test isempty(P_SF.D₂₂)
+@test P_SF.D₂₁ == spzeros(Nx,Nw)
+@test P_SF.D₂₂ == spzeros(Nx,Nu)
 
 ## Special constructors _________________________________________________
 # State-feedback plant with LQR-style unitary weights

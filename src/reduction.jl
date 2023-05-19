@@ -8,23 +8,20 @@
 
 # FUNCTIONS _____________________________________________________________
 
-function sparsity_dim_reduction(P::AbstractGeneralizedPlant, cⱼ::AbstractVector, 𝓢::AbstractVector)
-    # Defines the reduced model
-    if P isa AbstractGeneralizedPlant{T,StateFeedback} where T
-        sₓ = unique(findnz((𝓢[1][end]*(P.A.≠0))[:,cⱼ])[1]);   
-        sᵤ = unique(findnz(𝓢[2][end][:,cⱼ])[1]);
-        P̃ = view(P, (sₓ, [sₓ;P.Nx.+sᵤ]), (sₓ, cⱼ, sᵤ));
-    else
-        sₓ,sᵤ,sᵧ = (unique(findnz((𝓢ⱼ[end])[:,cⱼ])[1]) for 𝓢ⱼ in 𝓢);   
-        P̃ = view(P, (sₓ, [sₓ;P.Nx.+sᵤ], sᵧ), (sₓ, cⱼ, sᵤ));
-    end
+function sparsity_dim_reduction(P::AbstractGeneralizedPlant, cⱼ::AbstractVector, Sₓ::AbstractMatrix, Sᵤ::AbstractMatrix)
+    # Obtains the (sorted) indexes of the (d+1)-Localized neighborhood of x(cⱼ)
+    sₓ = unique(findnz(((P.A .≠ 0) * Sₓ)[:,cⱼ])[1]);   
+    sᵤ = unique(findnz(Sᵤ[:,cⱼ])[1]);   
+    
+    # Creates the reduced-order model
+    P̃ = view(P, (sₓ, [sₓ; P.Nx.+sᵤ], :), (sₓ, cⱼ, sᵤ));
 
     # Appropriate identity matrix from original state-space
-    iiₓ = indexin(sₓ,cⱼ) .≠ nothing; 
-    Ĩ = [I(P̃.Nx)[:,iiₓ] spzeros(P̃.Nx, P̃.Nw-sum(iiₓ))] #(cⱼ[end] ≤ P.Nx)*I;
+    iᵣ = [indexin(sₓ, cⱼ); indexin(1:P̃.Ny, cⱼ .- P.Nx)] .≠ nothing;
+    Ĩ = I(P̃.Nx+P̃.Ny)[1:P̃.Nx,iᵣ];
+    
     # --
-
-    return P̃, Ĩ, iiₓ, sₓ, sᵤ
+    return P̃, Ĩ, iᵣ, sₓ, sᵤ
 end
 
 # _______________________________________________________________________
