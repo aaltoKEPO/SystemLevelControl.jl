@@ -89,7 +89,7 @@ function _SLS_H2(Cⱼ::AbstractVector, P::AbstractGeneralizedPlant, T::Integer, 
     # Optimization loop _________________________________________________
     for cⱼ in Cⱼ
         # Obtains a reduced-order system based on the sparsity in 𝓢 = [Sₓ, Sᵤ]
-        (P̃,Ĩ,iᵣ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, Sₓ[end], Sᵤ[end]);  
+        (P̃,Ĩ,iᵣ,sₓ,sᵤ) = sparsity_dim_reduction(P, cⱼ, Sₓ, Sᵤ);  
         
         # Slices the ADMM constant term (if needed)
         if ν[1] === nothing

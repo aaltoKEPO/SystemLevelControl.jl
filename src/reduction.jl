@@ -8,10 +8,10 @@
 
 # FUNCTIONS _____________________________________________________________
 
-function sparsity_dim_reduction(P::AbstractGeneralizedPlant, cⱼ::AbstractVector, Sₓ::AbstractMatrix, Sᵤ::AbstractMatrix)
+function sparsity_dim_reduction(P::AbstractGeneralizedPlant, cⱼ::AbstractVector, Sₓ::AbstractVector, Sᵤ::AbstractVector)
     # Obtains the (sorted) indexes of the (d+1)-Localized neighborhood of x(cⱼ)
-    sₓ = unique(findnz(((P.A .≠ 0) * Sₓ)[:,cⱼ])[1]);   
-    sᵤ = unique(findnz(Sᵤ[:,cⱼ])[1]);   
+    sₓ = unique(findnz(((P.A .≠ 0) * Sₓ[end])[:,cⱼ])[1]);   
+    sᵤ = unique(findnz(Sᵤ[end][:,cⱼ])[1]);   
     
     # Creates the reduced-order model
     P̃ = view(P, (sₓ, [sₓ; P.Nx.+sᵤ], :), (sₓ, cⱼ, sᵤ));
