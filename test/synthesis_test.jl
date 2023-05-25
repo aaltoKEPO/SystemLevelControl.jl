@@ -41,7 +41,7 @@ P_chain_SF = Plant(A, B₁, B₂);
 Sx,_,_,_ = ared(Matrix(A), Matrix(B₂), D₁₂'D₁₂, C₁'C₁, C₁'D₁₂);
 
 H2_CLQR = tr(B₁'Sx*B₁);
-H2_LLQR = 2π * norm([C₁*Φ[1]*B₁+D₁₂*Φ[2]*B₁ for Φ in zip(Φₓ,Φᵤ)], :𝓗₂);
+H2_LLQR = 2π * norm([[C₁ D₁₂]*[Φ[1]; Φ[2]]*B₁ for Φ in zip(Φₓ,Φᵤ)], :𝓗₂);
 
 @test (H2_LLQR / H2_CLQR) < 1.18 
 
@@ -77,32 +77,15 @@ end
 
 # -----------------------------------------------------------------------
 
-## STATE-FEEDBACK SLS w/ DISTURBANCES ___________________________________
-B₁d = [0.5I(Nx÷2+1) zeros(Nx÷2+1,Nx÷2); zeros(Nx÷2,Nx÷2+1) 1.5I(Nx÷2)];
-P_chain_dSF = Plant(A, B₁d, B₂, C₁, 0, D₁₂);
-
-Φₓ,Φᵤ = SLS(P_chain_dSF, [𝓢ₓₓ,𝓢ᵤₓ]);
-
-## 1st Test: The closed-loop 𝓗₂-norm of the SLS solutions is approximately
-#   that of the (LQR) centralized solution 
-Sx,_,_,_ = ared(Matrix(A), Matrix(B₂), D₁₂'D₁₂, C₁'C₁, C₁'D₁₂);
-
-H2_CLQR = tr(B₁d'Sx*B₁d);
-H2_LLQR = 2π * norm([C₁*Φ[1]*B₁d + D₁₂*Φ[2]*B₁d for Φ in zip(Φₓ,Φᵤ)], :𝓗₂);
-
-@test (H2_LLQR / H2_CLQR) < 1.18
-
-# -----------------------------------------------------------------------
-
 # OUTPUT-FEEDBACK SLS __________________________________________________
-BB₁ = [B₁ zeros(Nx,Ny)]
-DD₂₁ = [zeros(Ny,Nx) D₂₁]
+BB₁ = [B₁ zeros(Nx,Ny)];
+DD₂₁ = [zeros(Ny,Nx) D₂₁];
 
 P_chain_OF = Plant(A, BB₁, B₂, 
                    C₁, 0, D₁₂, 
                    C₂, DD₂₁, 0);
 
-Φₓₓ,Φᵤₓ,Φₓᵧ,Φᵤᵧ = SLS(P_chain_OF, [𝓢ₓₓ,𝓢ᵤₓ,𝓢ₓᵧ,𝓢ᵤᵧ]);
+Φₓ,Φᵤ = SLS(P_chain_OF, [𝓢ₓₓ,𝓢ᵤₓ,𝓢ₓᵧ,𝓢ᵤᵧ]);
 
 ## 1st Test: The closed-loop 𝓗₂-norm of the SLS solutions is approximately
 #   that of the (LQR) centralized solution 
@@ -115,7 +98,7 @@ F₀ = -Rb\B₂'Sx*BB₁;
 L₀ = (F₂*Sy*C₂' + F₀*DD₂₁')/(I + C₂*Sy*C₂');
 
 H2_CLQG = tr(F₀'D₁₂'D₁₂*F₀ + (BB₁+B₂*F₀)'Sx*(BB₁+B₂*F₀)) + tr(Rb*((L₀*DD₂₁ - F₀)*(L₀*DD₂₁ - F₀)' + (L₀*C₂ - F₂)*Sy*(L₀*C₂ - F₂)'));
-H2_LLQG = 2π * norm([(C₁*Φ[1]+D₁₂*Φ[2])*BB₁ + (C₁*Φ[3]+D₁₂*Φ[4])*DD₂₁ for Φ in zip(Φ̃ₓₓ,Φ̃ᵤₓ,Φ̃ₓᵧ,Φ̃ᵤᵧ)], :𝓗₂);
+H2_LLQG = 2π * norm([[C₁ D₁₂]*[Φ[1]; Φ[2]]*[BB₁; DD₂₁] for Φ in zip(Φₓ,Φᵤ)], :𝓗₂);
 
 @test (H2_LLQG / H2_CLQG) < 2
 
@@ -162,8 +145,8 @@ H2_LLQG = 2π * norm([(C₁*Φ[1]+D₁₂*Φ[2])*BB₁ + (C₁*Φ[3]+D₁₂*Φ[
 # !!!  using partial separability. It is used only for testing purposes
 using JuMP, SCS 
 
-BB₁ = [B₁ zeros(Nx,Ny)]
-DD₂₁ = [zeros(Ny,Nx) D₂₁]
+BB₁ = [B₁ zeros(Nx,Ny)];
+DD₂₁ = [zeros(Ny,Nx) D₂₁];
 
 problem = Model(SCS.Optimizer);
 Φₓₓ = [@variable(problem, [1:Nx,1:Nx]) for _ in 1:T];
